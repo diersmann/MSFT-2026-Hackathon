@@ -46,7 +46,7 @@ export function renderScored(
 ): string {
   const weakest = readiness.signals[readiness.weakest];
   const perfect = score === 4;
-  const epic = readiness.issueType === 'epic';
+  const scopeFailed = !readiness.signals.scope.pass;
 
   const lines: string[] = [
     markerWithVersion(meta.promptVersion),
@@ -74,22 +74,24 @@ export function renderScored(
   if (meta.route) {
     const icon = meta.route === 'mechanical' ? '🤖' : '🧑';
     const who = meta.route === 'mechanical' ? 'a coding agent could take this' : 'this wants a human';
+    const reason = meta.routeReason?.trim();
     lines.push(
       '',
-      `${icon} **${meta.route}** — ${who}${meta.routeReason ? `: ${meta.routeReason}` : ''}`,
+      `${icon} **${meta.route}** — ${who}${reason ? `. **Reason:** ${reason}` : ''}`,
     );
   }
 
-  // An epic is not a bad issue, so say what to do about it rather than only
-  // docking it on scope.
-  if (epic) {
+  // A failed scope signal is actionable: offer the splitter even if the model
+  // did not also classify the issue as an epic. The signal is the source of
+  // truth for whether the score says this is more than one change.
+  if (scopeFailed) {
     lines.push(
       '',
-      'This looks like an epic rather than one change. Comment `/split` and I will break it into linked sub-issues.',
+      'This looks like more than one change. Comment `/split` and I will break it into linked sub-issues.',
     );
   }
 
-  if (perfect && !epic) {
+  if (perfect) {
     lines.push('', 'This one looks ready to hand to a coding agent — labelled `agent-ready`.');
   }
 
