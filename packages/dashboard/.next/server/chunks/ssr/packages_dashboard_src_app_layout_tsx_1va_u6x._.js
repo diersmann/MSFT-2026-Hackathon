@@ -1,3 +1,0 @@
-module.exports=[29349,a=>{"use strict";var b=a.i(7997);a.s(["default",0,function({children:a}){return(0,b.jsx)("html",{lang:"en",children:(0,b.jsx)("body",{className:"min-h-screen",children:a})})},"metadata",0,{title:"Dispatch — human and machine work, side by side",description:"Agent-readiness scores and mechanical-versus-judgement routing for a GitHub project board."}])},30732,function(a){a.n(a.i(29349))}];
-
-//# sourceMappingURL=packages_dashboard_src_app_layout_tsx_1va_u6x._.js.map

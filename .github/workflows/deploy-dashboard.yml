@@ -1,0 +1,105 @@
+name: Deploy dashboard to Azure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-dashboard.yml'
+      - 'packages/core/**'
+      - 'packages/dashboard/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: dashboard-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check deployment configuration
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+        run: |
+          missing=()
+          for name in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_RESOURCE_GROUP AZURE_WEBAPP_NAME; do
+            if [ -z "${!name}" ]; then missing+=("$name"); fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing GitHub Actions configuration: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build shared packages
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      # Webpack is explicit so local, CI, and App Service packaging use the
+      # same stable production builder while Next 16 evolves Turbopack.
+      - name: Build the dashboard
+        run: npm run build --workspace @dispatch/dashboard -- --webpack
+
+      - name: Assemble the standalone deployment
+        run: |
+          mkdir -p .azure-app
+          cp -R packages/dashboard/.next/standalone/. .azure-app/
+          mkdir -p .azure-app/packages/dashboard/.next
+          cp -R packages/dashboard/.next/static .azure-app/packages/dashboard/.next/static
+          if [ -d packages/dashboard/public ]; then
+            cp -R packages/dashboard/public .azure-app/packages/dashboard/public
+          fi
+
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Configure the startup command
+        run: >-
+          az webapp config set
+          --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}"
+          --name "${{ vars.AZURE_WEBAPP_NAME }}"
+          --startup-file "node packages/dashboard/server.js"
+
+      - name: Deploy to Azure App Service
+        id: deploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          package: .azure-app
+
+      - name: Check the deployed app
+        run: >-
+          curl --fail --show-error
+          --retry 10 --retry-delay 10 --retry-all-errors
+          "${{ steps.deploy.outputs.webapp-url }}"

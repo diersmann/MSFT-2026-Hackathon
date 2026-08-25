@@ -117,7 +117,10 @@ DISPATCH_TARGET_REPO=owner/playground \
 npm run dev --workspace @dispatch/dashboard
 ```
 
-Deploy to Vercel from repo root (`vercel.json` is configured). Set `GITHUB_TOKEN`, `DISPATCH_TARGET_REPO`, and the Azure variables in the project settings.
+Deploy to Vercel from repo root (`vercel.json` is configured), or deploy the
+server-rendered app to Azure App Service with the included GitHub Actions
+workflow. See [the Azure App Service deployment guide](docs/azure-app-service.md)
+for the required OIDC, repository, and runtime settings.
 
 ---
 
