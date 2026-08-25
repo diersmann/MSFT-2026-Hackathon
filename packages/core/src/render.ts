@@ -46,7 +46,8 @@ export function renderScored(
 ): string {
   const weakest = readiness.signals[readiness.weakest];
   const perfect = score === 4;
-  const scopeFailed = !readiness.signals.scope.pass;
+  const shouldSuggestSplit =
+    !readiness.signals.scope.pass || readiness.issueType === 'epic';
 
   const lines: string[] = [
     markerWithVersion(meta.promptVersion),
@@ -81,10 +82,9 @@ export function renderScored(
     );
   }
 
-  // A failed scope signal is actionable: offer the splitter even if the model
-  // did not also classify the issue as an epic. The signal is the source of
-  // truth for whether the score says this is more than one change.
-  if (scopeFailed) {
+  // Either verdict is enough to offer the splitter. This remains useful when
+  // the model's scope signal and issue-type classification disagree.
+  if (shouldSuggestSplit) {
     lines.push(
       '',
       'This looks like more than one change. Comment `/split` and I will break it into linked sub-issues.',

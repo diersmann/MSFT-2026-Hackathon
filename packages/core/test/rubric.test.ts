@@ -171,6 +171,19 @@ test('a failed scope signal suggests /split even when the issue type is not epic
   assert.match(comment ?? '', /Comment `\/split`/);
 });
 
+test('an epic classification suggests /split even when the scope signal passed', () => {
+  const comment = renderComment(
+    scored(
+      readiness({
+        signals: signals({ scope: true }),
+        issueType: 'epic',
+      }),
+    ),
+  );
+
+  assert.match(comment ?? '', /Comment `\/split`/);
+});
+
 test('a judgement verdict includes its reason in the comment', () => {
   const comment = renderComment(scored(readiness(), 'judgement'));
 
