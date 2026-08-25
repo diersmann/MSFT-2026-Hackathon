@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CLASSIFICATION_JSON_SCHEMA, ClassificationSchema } from './split-schema.js';
 
 /**
  * A single rubric signal. The model returns a boolean plus its reasoning —
@@ -33,6 +34,20 @@ export const SIGNAL_QUESTIONS: Record<SignalKey, string> = {
   ambiguity: 'Are there undefined terms doing heavy lifting?',
 };
 
+/**
+ * Board taxonomy. Deliberately small and mutually exclusive — a type label is
+ * only useful if you can scan a column and trust it.
+ *
+ * `epic` matters most: it is the signal that an issue wants /split rather than
+ * an assignee, which is otherwise only discoverable by reading it.
+ *
+ * None of these may collide with SKIP_LABELS in rubric.ts, or the bot would
+ * label an issue and then refuse to score it on the next run.
+ */
+export const ISSUE_TYPES = ['bug', 'feature', 'chore', 'docs', 'question', 'epic'] as const;
+
+export type IssueType = (typeof ISSUE_TYPES)[number];
+
 export const ReadinessSchema = z.object({
   signals: z.object({
     observableOutcome: SignalSchema,
@@ -42,6 +57,13 @@ export const ReadinessSchema = z.object({
   }),
   weakest: z.enum(SIGNAL_KEYS),
   suggestion: z.string(),
+  issueType: z.enum(ISSUE_TYPES),
+  /**
+   * Same shape the /split classifier returns, so both paths feed the identical
+   * asymmetric routeChild function. If the linter used its own rules, the board
+   * would show one verdict and the split comment another.
+   */
+  routing: ClassificationSchema,
   confidence: z.enum(['high', 'low']),
   abstainReason: z.string().nullable(),
 });
@@ -57,7 +79,15 @@ export type Readiness = z.infer<typeof ReadinessSchema>;
 export const READINESS_JSON_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['signals', 'weakest', 'suggestion', 'confidence', 'abstainReason'],
+  required: [
+    'signals',
+    'weakest',
+    'suggestion',
+    'issueType',
+    'routing',
+    'confidence',
+    'abstainReason',
+  ],
   properties: {
     signals: {
       type: 'object',
@@ -91,6 +121,13 @@ export const READINESS_JSON_SCHEMA = {
       description:
         'One concrete rewrite of the weakest part. Not a list of feedback — one thing the author can paste in.',
     },
+    issueType: {
+      type: 'string',
+      enum: [...ISSUE_TYPES],
+      description:
+        'What kind of work item this is. Use epic when it is several coherent changes that ought to be split rather than assigned.',
+    },
+    routing: CLASSIFICATION_JSON_SCHEMA,
     confidence: {
       type: 'string',
       enum: ['high', 'low'],
@@ -109,6 +146,9 @@ export type ReadinessResult =
       status: 'scored';
       score: number;
       readiness: Readiness;
+      /** Derived in code from readiness.routing, via the same asymmetry /split uses. */
+      route: 'mechanical' | 'judgement';
+      routeReason: string;
       input: ScoringInput;
       promptVersion: string;
       model: string;

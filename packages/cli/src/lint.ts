@@ -18,8 +18,7 @@ import {
   createOctokit,
   ensureLabel,
   fetchIssue,
-  LABEL_AGENT_READY,
-  LABEL_UNSCORED,
+  LABEL_DEFINITIONS,
   listIssues,
   parseRepo,
   planLabels,
@@ -90,23 +89,13 @@ async function run(
   console.log(`    comment ${posted.action}: ${posted.url}`);
 
   const plan = planLabels(result);
-  if (plan.add.includes(LABEL_AGENT_READY)) {
-    await ensureLabel(
-      octokit,
-      ref,
-      LABEL_AGENT_READY,
-      '0e8a16',
-      'Scored 4/4 by the readiness linter — safe to hand to a coding agent',
-    );
-  }
-  if (plan.add.includes(LABEL_UNSCORED)) {
-    await ensureLabel(
-      octokit,
-      ref,
-      LABEL_UNSCORED,
-      'ededed',
-      'The readiness linter could not score this confidently',
-    );
+  // Every label in the plan, not a hand-maintained subset: a label that is
+  // applied but never created silently fails to appear.
+  for (const label of plan.add) {
+    const definition = LABEL_DEFINITIONS[label];
+    if (definition) {
+      await ensureLabel(octokit, ref, label, definition.color, definition.description);
+    }
   }
   await reconcileLabels(octokit, ref, issue.number, issue.labels, plan.add, plan.remove);
   if (plan.add.length || plan.remove.length) {

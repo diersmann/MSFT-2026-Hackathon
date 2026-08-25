@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { planLabels, renderComment, READINESS_MARKER } from '../src/render.js';
+import { LABEL_DEFINITIONS, planLabels, renderComment, READINESS_MARKER } from '../src/render.js';
 import { deriveScore, shouldSkip } from '../src/rubric.js';
-import type { Readiness, ReadinessResult, ScoringInput } from '../src/schema.js';
+import { ISSUE_TYPES, type Readiness, type ReadinessResult, type ScoringInput } from '../src/schema.js';
 import type { IssueSnapshot } from '../src/github.js';
 
 function signals(passes: Partial<Record<keyof Readiness['signals'], boolean>>): Readiness['signals'] {
@@ -31,14 +31,37 @@ const input: ScoringInput = {
   treeTruncated: false,
 };
 
-function scored(readiness: Readiness): ReadinessResult {
+function scored(readiness: Readiness, route: 'mechanical' | 'judgement' = 'judgement'): ReadinessResult {
   return {
     status: 'scored',
     score: deriveScore(readiness),
     readiness,
+    route,
+    routeReason: 'test reason',
     input,
     promptVersion: 'test-v1',
     model: 'test-model',
+  };
+}
+
+const routing: Readiness['routing'] = {
+  outcomeFullyDetermined: false,
+  diffVerifiableWithoutOpinion: false,
+  requiresTaste: false,
+  reasoning: 'test',
+  confidence: 'high',
+};
+
+function readiness(overrides: Partial<Readiness> = {}): Readiness {
+  return {
+    signals: signals({}),
+    weakest: 'ambiguity',
+    suggestion: 's',
+    issueType: 'bug',
+    routing,
+    confidence: 'high',
+    abstainReason: null,
+    ...overrides,
   };
 }
 
@@ -59,25 +82,14 @@ function issue(overrides: Partial<IssueSnapshot> = {}): IssueSnapshot {
 }
 
 test('score is derived by counting passes, not taken from the model', () => {
-  assert.equal(deriveScore({ signals: signals({}), weakest: 'scope', suggestion: 's', confidence: 'high', abstainReason: null }), 0);
+  assert.equal(deriveScore(readiness({ weakest: 'scope' })), 0);
+  assert.equal(deriveScore(readiness({ signals: signals({ scope: true, context: true }) })), 2);
   assert.equal(
-    deriveScore({
-      signals: signals({ scope: true, context: true }),
-      weakest: 'ambiguity',
-      suggestion: 's',
-      confidence: 'high',
-      abstainReason: null,
-    }),
-    2,
-  );
-  assert.equal(
-    deriveScore({
-      signals: signals({ observableOutcome: true, scope: true, context: true, ambiguity: true }),
-      weakest: 'ambiguity',
-      suggestion: 's',
-      confidence: 'high',
-      abstainReason: null,
-    }),
+    deriveScore(
+      readiness({
+        signals: signals({ observableOutcome: true, scope: true, context: true, ambiguity: true }),
+      }),
+    ),
     4,
   );
 });
@@ -89,24 +101,16 @@ test('agent-ready is applied only at 4/4', () => {
         .slice(0, score)
         .map((k) => [k, true]),
     );
-    const result = scored({
-      signals: signals(passes),
-      weakest: 'ambiguity',
-      suggestion: 's',
-      confidence: 'high',
-      abstainReason: null,
-    });
+    const result = scored(readiness({ signals: signals(passes) }));
     assert.ok(!planLabels(result).add.includes('agent-ready'), `score ${score} must not be agent-ready`);
   }
 
-  const perfect = scored({
-    signals: signals({ observableOutcome: true, scope: true, context: true, ambiguity: true }),
-    weakest: 'ambiguity',
-    suggestion: 's',
-    confidence: 'high',
-    abstainReason: null,
-  });
-  assert.deepEqual(planLabels(perfect).add, ['agent-ready']);
+  const perfect = scored(
+    readiness({
+      signals: signals({ observableOutcome: true, scope: true, context: true, ambiguity: true }),
+    }),
+  );
+  assert.ok(planLabels(perfect).add.includes('agent-ready'));
 });
 
 test('abstention labels unscored and never agent-ready', () => {
@@ -198,4 +202,83 @@ test('scope gate lets ordinary work items through', () => {
 test('force overrides label gates but never the pull-request gate', () => {
   assert.equal(shouldSkip(issue({ labels: ['type: idea'] }), { force: true }), null);
   assert.ok(shouldSkip(issue({ isPullRequest: true }), { force: true }));
+});
+
+test('a scored issue gets exactly one type label and one route label', () => {
+  const plan = planLabels(scored(readiness({ issueType: 'epic' }), 'judgement'));
+
+  assert.ok(plan.add.includes('type: epic'));
+  assert.ok(plan.add.includes('judgement'));
+  // The other five types and the opposite route must be cleared, or a re-score
+  // after an edit leaves two contradictory labels on the issue.
+  assert.ok(plan.remove.includes('type: bug'));
+  assert.ok(plan.remove.includes('mechanical'));
+  assert.equal(plan.add.filter((l) => l.startsWith('type: ')).length, 1);
+});
+
+test('re-scoring to a different type removes the previous one', () => {
+  const before = planLabels(scored(readiness({ issueType: 'bug' })));
+  const after = planLabels(scored(readiness({ issueType: 'chore' })));
+
+  assert.ok(before.add.includes('type: bug'));
+  assert.ok(after.add.includes('type: chore'));
+  assert.ok(after.remove.includes('type: bug'), 'the stale type must be removed');
+});
+
+/** Score and route are orthogonal: well-written prose about a design decision. */
+test('a 4/4 judgement issue is agent-ready but still routed to a human', () => {
+  const plan = planLabels(
+    scored(
+      readiness({
+        signals: signals({ observableOutcome: true, scope: true, context: true, ambiguity: true }),
+      }),
+      'judgement',
+    ),
+  );
+
+  assert.ok(plan.add.includes('agent-ready'));
+  assert.ok(plan.add.includes('judgement'));
+  assert.ok(!plan.add.includes('mechanical'));
+});
+
+test('abstention claims no type and no route', () => {
+  const plan = planLabels({
+    status: 'abstained',
+    reason: 'empty body',
+    input,
+    promptVersion: 'test-v1',
+    model: 'test-model',
+  });
+
+  assert.deepEqual(plan.add, ['readiness: unscored']);
+  assert.ok(!plan.add.some((l) => l.startsWith('type: ')));
+  // Whatever a previous run claimed must be withdrawn.
+  assert.ok(plan.remove.includes('type: bug'));
+  assert.ok(plan.remove.includes('mechanical'));
+  assert.ok(plan.remove.includes('judgement'));
+});
+
+test('every label the planner can add has a definition', () => {
+  const emitted = new Set<string>();
+  for (const type of ISSUE_TYPES) {
+    for (const route of ['mechanical', 'judgement'] as const) {
+      for (const label of planLabels(scored(readiness({ issueType: type }), route)).add) {
+        emitted.add(label);
+      }
+    }
+  }
+  for (const label of planLabels({
+    status: 'abstained',
+    reason: 'x',
+    input,
+    promptVersion: 'v',
+    model: 'm',
+  }).add) {
+    emitted.add(label);
+  }
+
+  // A label applied without a definition is created colourless and undescribed.
+  for (const label of emitted) {
+    assert.ok(LABEL_DEFINITIONS[label], `${label} needs an entry in LABEL_DEFINITIONS`);
+  }
 });

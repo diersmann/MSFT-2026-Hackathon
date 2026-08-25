@@ -5,7 +5,7 @@ import { SIGNAL_QUESTIONS, type ScoringInput } from '../schema.js';
  * record, so the dashboard can tell which rubric version produced a number and
  * a prompt edit does not silently invalidate historical scores.
  */
-export const PROMPT_VERSION = 'readiness-v1';
+export const PROMPT_VERSION = 'readiness-v2';
 
 export const READINESS_SYSTEM = `You judge whether a software issue is ready to be handed to an autonomous coding agent.
 
@@ -35,6 +35,24 @@ Then pick the single weakest signal and write ONE concrete rewrite of that part.
 - Two or three sentences. If the issue is already strong, suggest the smallest sharpening that would help an agent.
 - Never invent facts about the codebase. If you need a filename you do not have, write a placeholder like <path/to/file>.
 
+Also classify the issue two ways, independently of the score.
+
+issueType — what kind of work item this is:
+  bug      something is broken and should behave differently
+  feature  new capability or behaviour
+  chore    maintenance, dependencies, cleanup, tooling, tests
+  docs     documentation only
+  question support or a request for information, not work
+  epic     several coherent changes bundled together; wants /split rather than an assignee
+Pick epic whenever the scope signal failed because the issue bundles independent changes. An epic is not a bad issue, it is a wrongly-shaped one.
+
+routing — whether a coding agent could safely take this as-is. Judge the work itself, not how well it is written:
+  outcomeFullyDetermined       two competent engineers working from this alone would produce substantially the same diff
+  diffVerifiableWithoutOpinion a reviewer could accept or reject the result without a matter of taste
+  requiresTaste                any design, product, naming, copy, UX or architecture decision is left open
+  confidence                   low whenever you are unsure
+Set confidence to low when you cannot tell. Being wrong toward "a human should look" costs someone ten minutes; being wrong the other way costs a confident, wrong pull request. Never guess in the agent's favour.
+
 Honesty rule. Set confidence to "low" and explain why in abstainReason when you genuinely cannot judge — the body is empty or near-empty, it is in a language you cannot read, it is a template with nothing filled in, or it is not a software work item at all. A refusal is more useful than an invented number. Do not use "low" merely because the issue is bad: a confidently bad issue scores 0 or 1 with high confidence.
 
 Evidence rule. Every "why" cites something in the issue. Quote a short phrase where you can. Never justify a verdict with something the issue does not say.`;
@@ -55,6 +73,8 @@ VERDICT:
   context FAIL — no files, no repro, no error text, no affected users named.
   ambiguity FAIL — "properly" and "some users" carry the whole requirement.
   weakest: context
+  issueType: bug
+  routing: outcomeFullyDetermined false, diffVerifiableWithoutOpinion false, requiresTaste false, confidence high
   confidence: high (it is clearly a software issue, it is just a bad one)
 
 --- EXAMPLE B: score 2/4 ---
@@ -66,6 +86,8 @@ VERDICT:
   context FAIL — names the route but not the handler file; an agent must go looking.
   ambiguity FAIL — "like the rest of the API" is load-bearing and undefined; which headers, computed how?
   weakest: ambiguity
+  issueType: bug
+  routing: outcomeFullyDetermined false, diffVerifiableWithoutOpinion true, requiresTaste false, confidence high
   confidence: high
 
 --- EXAMPLE C: score 4/4 ---
@@ -77,6 +99,21 @@ VERDICT:
   context PASS — exact file, exact lines, the pattern to follow.
   ambiguity PASS — the mapping is spelled out.
   weakest: ambiguity (nothing is actually weak; pick the least strong)
+  issueType: chore
+  routing: outcomeFullyDetermined true, diffVerifiableWithoutOpinion true, requiresTaste false, confidence high
+  confidence: high
+
+--- EXAMPLE D: an epic ---
+TITLE: Migrate the settings page to the new design system
+BODY: Settings still uses the old components. Rename the props, update the imports, regenerate the snapshots, and decide the new spacing scale while we are in there.
+VERDICT:
+  observableOutcome FAIL — "the new design system" has no checkable finish line.
+  scope FAIL — four independent changes, one of which is a design decision.
+  context PASS — names the settings page.
+  ambiguity FAIL — "the new design system" and "the new spacing scale" are undefined.
+  weakest: scope
+  issueType: epic
+  routing: outcomeFullyDetermined false, diffVerifiableWithoutOpinion false, requiresTaste true, confidence high
   confidence: high`;
 
 function renderGrounding(input: ScoringInput): string {

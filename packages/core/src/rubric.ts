@@ -11,6 +11,7 @@ import {
   type ScoringInput,
 } from './schema.js';
 import { EMPTY_GROUNDING, groundPaths } from './tree.js';
+import { routeChild } from './split-schema.js';
 import type { IssueSnapshot, RepoRef } from './github.js';
 
 /**
@@ -154,10 +155,17 @@ export async function scoreReadiness(
     };
   }
 
+  const { route, routeReason } = routeChild(
+    readiness.routing,
+    input.paths.filter((p) => !p.exists).map((p) => p.path),
+  );
+
   return {
     status: 'scored',
     score: deriveScore(readiness),
     readiness,
+    route,
+    routeReason,
     input,
     promptVersion: PROMPT_VERSION,
     model,

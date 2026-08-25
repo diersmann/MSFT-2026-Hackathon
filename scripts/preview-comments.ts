@@ -34,6 +34,19 @@ function signal(pass: boolean, why: string) {
   return { pass, why };
 }
 
+function routing(
+  overrides: Partial<Readiness['routing']> = {},
+): Readiness['routing'] {
+  return {
+    outcomeFullyDetermined: false,
+    diffVerifiableWithoutOpinion: false,
+    requiresTaste: false,
+    reasoning: 'the description leaves the outcome open to interpretation',
+    confidence: 'high',
+    ...overrides,
+  };
+}
+
 const cases: Array<{ label: string; result: ReadinessResult }> = [
   {
     label: 'A 4/4 issue — earns the agent-ready label',
@@ -50,6 +63,12 @@ const cases: Array<{ label: string; result: ReadinessResult }> = [
         weakest: 'ambiguity',
         suggestion:
           'Nothing is weak here. If you want to be exhaustive, state which date format the CSV should use so a reviewer never has to check the old behaviour.',
+        issueType: 'chore',
+        routing: routing({
+          outcomeFullyDetermined: true,
+          diffVerifiableWithoutOpinion: true,
+          reasoning: 'a named substitution in one file',
+        }),
         confidence: 'high',
         abstainReason: null,
       },
@@ -58,6 +77,8 @@ const cases: Array<{ label: string; result: ReadinessResult }> = [
         title: 'Replace moment() with date-fns in src/reports/export.js',
         paths: [{ path: 'src/reports/export.js', exists: true }],
       },
+      route: 'mechanical',
+      routeReason: 'a named substitution in one file',
       promptVersion: 'readiness-v1',
       model: 'gpt-4.1-mini',
     },
@@ -77,10 +98,14 @@ const cases: Array<{ label: string; result: ReadinessResult }> = [
         weakest: 'ambiguity',
         suggestion:
           'Set `X-RateLimit-Remaining` on `/api/search` responses using the same value the other handlers compute. Done when a request to /api/search returns the header and its value matches /api/projects for the same client.',
+        issueType: 'bug',
+        routing: routing({ diffVerifiableWithoutOpinion: true }),
         confidence: 'high',
         abstainReason: null,
       },
       input: baseInput,
+      route: 'judgement',
+      routeReason: 'the description leaves the outcome open to interpretation',
       promptVersion: 'readiness-v1',
       model: 'gpt-4.1-mini',
     },
@@ -100,10 +125,14 @@ const cases: Array<{ label: string; result: ReadinessResult }> = [
         weakest: 'context',
         suggestion:
           'Add: which users are affected (all, or a subset with something in common), what happens instead of logging in, any error in the console or server log, and the steps you took. Even "email addresses with a plus sign get a 500 from POST /login" is enough to start.',
+        issueType: 'bug',
+        routing: routing(),
         confidence: 'high',
         abstainReason: null,
       },
       input: { ...baseInput, title: 'Fix the login bug', labels: ['bug'] },
+      route: 'judgement',
+      routeReason: 'the description leaves the outcome open to interpretation',
       promptVersion: 'readiness-v1',
       model: 'gpt-4.1-mini',
     },
@@ -123,6 +152,12 @@ const cases: Array<{ label: string; result: ReadinessResult }> = [
         weakest: 'context',
         suggestion:
           'This references `src/legacy/adapter-v1.js`, which I could not find in the repository. Point at the file as it exists now, or close this if the deletion already happened.',
+        issueType: 'chore',
+        routing: routing({
+          outcomeFullyDetermined: true,
+          diffVerifiableWithoutOpinion: true,
+          reasoning: 'deleting a named module is mechanical',
+        }),
         confidence: 'high',
         abstainReason: null,
       },
@@ -134,6 +169,10 @@ const cases: Array<{ label: string; result: ReadinessResult }> = [
           { path: 'src/legacy/index.js', exists: false },
         ],
       },
+      // Mechanical on every other axis, demoted purely by the missing paths.
+      route: 'judgement',
+      routeReason:
+        'references src/legacy/adapter-v1.js, src/legacy/index.js, which I could not find in the repository',
       promptVersion: 'readiness-v1',
       model: 'gpt-4.1-mini',
     },
@@ -163,6 +202,8 @@ const cases: Array<{ label: string; result: ReadinessResult }> = [
         weakest: 'ambiguity',
         suggestion:
           'Describe the defect in words as well as the image: "on /settings the save button overlaps the footer below 400px width". An agent cannot see the screenshot.',
+        issueType: 'bug',
+        routing: routing({ requiresTaste: true, reasoning: 'what "correct" looks like is a visual judgement' }),
         confidence: 'high',
         abstainReason: null,
       },
@@ -171,6 +212,38 @@ const cases: Array<{ label: string; result: ReadinessResult }> = [
         title: 'Settings page looks wrong on mobile',
         attachments: { images: 2, links: ['https://example.com/design'] },
       },
+      route: 'judgement',
+      routeReason: 'what "correct" looks like is a visual judgement',
+      promptVersion: 'readiness-v1',
+      model: 'gpt-4.1-mini',
+    },
+  },
+  {
+    label: 'An epic — scored, but told to /split instead',
+    result: {
+      status: 'scored',
+      score: 1,
+      readiness: {
+        signals: {
+          observableOutcome: signal(false, '"the new design system" has no checkable finish line.'),
+          scope: signal(false, 'Four independent changes, one of them a design decision.'),
+          context: signal(true, 'Names the settings page and the components involved.'),
+          ambiguity: signal(false, '"the new spacing scale" is undefined.'),
+        },
+        weakest: 'scope',
+        suggestion:
+          'Split this into the prop rename, the import update, the snapshot regeneration, and a separate decision on the spacing scale. Each of the first three is checkable on its own.',
+        issueType: 'epic',
+        routing: routing({
+          requiresTaste: true,
+          reasoning: 'the spacing scale is an open design decision',
+        }),
+        confidence: 'high',
+        abstainReason: null,
+      },
+      input: { ...baseInput, title: 'Migrate the settings page to the new design system' },
+      route: 'judgement',
+      routeReason: 'the spacing scale is an open design decision',
       promptVersion: 'readiness-v1',
       model: 'gpt-4.1-mini',
     },
