@@ -28,13 +28,16 @@ export function SplitTrees({ trees }: { trees: SplitTree[] }) {
           const percent = Math.round((done / tree.children.length) * 100);
 
           return (
-            <div key={tree.parent.number} className="rounded-xl border border-edge bg-panel/40 p-4">
+            <div
+              key={tree.parent.number}
+              className="rounded-xl border border-edge bg-panel/40 p-4 shadow-card transition hover:border-slate-500"
+            >
               <div className="flex items-start justify-between gap-4">
                 <a
                   href={tree.parent.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="font-medium text-slate-100 hover:text-machine hover:underline"
+                  className="font-medium text-slate-100 transition-colors hover:text-machine hover:underline"
                 >
                   <span className="text-muted">#{tree.parent.number}</span> {tree.parent.title}
                 </a>
@@ -44,7 +47,10 @@ export function SplitTrees({ trees }: { trees: SplitTree[] }) {
               </div>
 
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-edge/40">
-                <div className="h-full rounded-full bg-good" style={{ width: `${percent}%` }} />
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-good/70 to-good transition-[width] duration-500 ease-out"
+                  style={{ width: `${percent}%` }}
+                />
               </div>
 
               <p className="mt-2 text-xs text-muted">
