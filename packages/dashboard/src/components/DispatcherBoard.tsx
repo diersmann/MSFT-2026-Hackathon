@@ -78,9 +78,6 @@ function Card({
         {card.parent !== null && (
           <span className="text-[11px] text-muted">split from #{card.parent}</span>
         )}
-        {card.state === 'CLOSED' && (
-          <span className="text-[11px] text-muted">closed</span>
-        )}
       </div>
 
       {card.assignees.length > 0 && (

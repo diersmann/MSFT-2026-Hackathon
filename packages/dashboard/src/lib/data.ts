@@ -15,7 +15,6 @@ export type BoardCard = {
   unscored: boolean;
   parent: number | null;
   createdAt: string;
-  closedAt: string | null;
   /** Someone reacted 👎 to the bot's verdict. */
   disputed: boolean;
 };
@@ -51,7 +50,6 @@ type GraphQlIssue = {
   url: string;
   state: string;
   createdAt: string;
-  closedAt: string | null;
   labels: { nodes: Array<{ name: string }> };
   assignees: { nodes: Array<{ login: string }> };
   parent: { number: number } | null;
@@ -78,7 +76,6 @@ query($owner:String!, $repo:String!) {
         url
         state
         createdAt
-        closedAt
         labels(first:20) { nodes { name } }
         assignees(first:10) { nodes { login } }
         parent { number }
@@ -155,7 +152,6 @@ export async function loadBoard(repoArg?: string): Promise<BoardData> {
         unscored,
         parent: issue.parent?.number ?? null,
         createdAt: issue.createdAt,
-        closedAt: issue.closedAt,
         disputed,
       };
     });
@@ -170,32 +166,16 @@ export type Distribution = {
   buckets: Array<{ score: number | 'unscored'; count: number }>;
   total: number;
   disputed: number;
-  medianHoursByScore: Array<{ score: number; median: number | null; n: number }>;
-  correlation: number | null;
 };
 
-function median(values: number[]): number | null {
-  if (!values.length) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2;
-}
-
-function pearson(pairs: Array<[number, number]>): number | null {
-  if (pairs.length < 3) return null;
-  const n = pairs.length;
-  const mx = pairs.reduce((a, [x]) => a + x, 0) / n;
-  const my = pairs.reduce((a, [, y]) => a + y, 0) / n;
-  let num = 0;
-  let dx = 0;
-  let dy = 0;
-  for (const [x, y] of pairs) {
-    num += (x - mx) * (y - my);
-    dx += (x - mx) ** 2;
-    dy += (y - my) ** 2;
-  }
-  if (!dx || !dy) return null;
-  return Math.round((num / Math.sqrt(dx * dy)) * 1000) / 1000;
+/**
+ * The dispatcher lanes are a to-do list, so a closed issue is noise there. Split
+ * trees and the distribution deliberately keep them: a tree without its finished
+ * children reports the wrong progress, and a distribution of only open issues
+ * would flatter the rubric by hiding everything already dealt with.
+ */
+export function openOnly(cards: BoardCard[]): BoardCard[] {
+  return cards.filter((card) => card.state !== 'CLOSED');
 }
 
 export function distribution(cards: BoardCard[]): Distribution {
@@ -207,27 +187,20 @@ export function distribution(cards: BoardCard[]): Distribution {
   }));
   buckets.push({ score: 'unscored', count: cards.filter((c) => c.unscored).length });
 
-  const closed = scored.filter((c) => c.closedAt);
-  const hoursFor = (card: BoardCard) =>
-    (new Date(card.closedAt!).getTime() - new Date(card.createdAt).getTime()) / 3600000;
-
-  const medianHoursByScore = [0, 1, 2, 3, 4].map((score) => {
-    const hours = closed.filter((c) => c.readiness === score).map(hoursFor);
-    return { score, median: median(hours), n: hours.length };
-  });
-
   return {
     buckets,
     total: scored.length,
     disputed: cards.filter((c) => c.disputed).length,
-    medianHoursByScore,
-    correlation: pearson(closed.map((c) => [c.readiness!, hoursFor(c)])),
   };
 }
 
 export type SplitTree = {
   parent: BoardCard;
+  /** Open children only — what is left to do. */
   children: BoardCard[];
+  /** Counts over every child, so the progress bar matches GitHub's own rollup. */
+  total: number;
+  done: number;
 };
 
 export function splitTrees(cards: BoardCard[]): SplitTree[] {
@@ -245,8 +218,21 @@ export function splitTrees(cards: BoardCard[]): SplitTree[] {
   for (const [parentNumber, children] of grouped) {
     const parent = byNumber.get(parentNumber);
     if (!parent) continue;
-    trees.push({ parent, children: children.sort((a, b) => a.number - b.number) });
+
+    // done and total span every child, including the closed ones now hidden
+    // below. A tree that counted only what it displays would sit at 0/2 forever
+    // and report the opposite of progress.
+    trees.push({
+      parent,
+      children: openOnly(children).sort((a, b) => a.number - b.number),
+      total: children.length,
+      done: children.filter((c) => c.state === 'CLOSED').length,
+    });
   }
 
-  return trees.sort((a, b) => b.parent.number - a.parent.number);
+  // An epic whose children are all closed is finished, so it drops off the board
+  // along with them.
+  return trees
+    .filter((tree) => tree.children.length > 0)
+    .sort((a, b) => b.parent.number - a.parent.number);
 }

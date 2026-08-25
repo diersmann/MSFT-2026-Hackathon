@@ -23,9 +23,9 @@ export function SplitTrees({ trees }: { trees: SplitTree[] }) {
 
       <div className="mt-4 space-y-4">
         {trees.map((tree) => {
-          const done = tree.children.filter((c) => c.state === 'CLOSED').length;
+          const done = tree.done;
           const machine = tree.children.filter((c) => c.lane === 'machine').length;
-          const percent = Math.round((done / tree.children.length) * 100);
+          const percent = tree.total === 0 ? 0 : Math.round((done / tree.total) * 100);
 
           return (
             <div
@@ -42,7 +42,7 @@ export function SplitTrees({ trees }: { trees: SplitTree[] }) {
                   <span className="text-muted">#{tree.parent.number}</span> {tree.parent.title}
                 </a>
                 <span className="shrink-0 text-xs text-muted">
-                  {done}/{tree.children.length} done
+                  {done}/{tree.total} done
                 </span>
               </div>
 
@@ -54,7 +54,7 @@ export function SplitTrees({ trees }: { trees: SplitTree[] }) {
               </div>
 
               <p className="mt-2 text-xs text-muted">
-                {machine} of {tree.children.length} routed to the agent
+                {machine} of {tree.children.length} remaining routed to the agent
               </p>
 
               <ul className="mt-3 space-y-1.5 border-l border-edge pl-4">
@@ -70,11 +70,7 @@ export function SplitTrees({ trees }: { trees: SplitTree[] }) {
                       href={child.url}
                       target="_blank"
                       rel="noreferrer"
-                      className={`hover:underline ${
-                        child.state === 'CLOSED'
-                          ? 'text-muted line-through'
-                          : 'text-slate-300 hover:text-machine'
-                      }`}
+                      className="text-slate-300 hover:text-machine hover:underline"
                     >
                       <span className="text-muted">#{child.number}</span> {child.title}
                     </a>

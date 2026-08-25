@@ -1,7 +1,7 @@
 import { DispatcherBoard } from '@/components/DispatcherBoard';
 import { ReadinessDistribution } from '@/components/ReadinessDistribution';
 import { SplitTrees } from '@/components/SplitTrees';
-import { distribution, loadBoard, splitTrees } from '@/lib/data';
+import { distribution, loadBoard, openOnly, splitTrees } from '@/lib/data';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,11 +12,17 @@ export default async function Page({
 }) {
   const params = await searchParams;
   const board = await loadBoard(params.repo);
-  const stats = distribution(board.cards);
+
+  // The lanes and the distribution are queues of work still to be done, so a
+  // closed issue is noise in both. Split trees are the exception: they need the
+  // closed children to report progress, and filter them internally.
+  const open = openOnly(board.cards);
+  const stats = distribution(open);
   const trees = splitTrees(board.cards);
 
-  const machine = board.cards.filter((c) => c.lane === 'machine').length;
-  const human = board.cards.filter((c) => c.lane === 'human').length;
+  const machine = open.filter((c) => c.lane === 'machine').length;
+  const human = open.filter((c) => c.lane === 'human').length;
+  const closed = board.cards.length - open.length;
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
@@ -43,7 +49,8 @@ export default async function Page({
             {board.repo}
           </a>
           <span className="rounded-full border border-edge bg-panel px-3 py-1">
-            {board.cards.length} issues
+            {open.length} open
+            {closed > 0 && <span className="text-muted"> · {closed} closed, hidden</span>}
           </span>
           <span className="flex items-center gap-1.5 rounded-full border border-edge bg-panel px-3 py-1">
             <span className="h-1.5 w-1.5 rounded-full bg-machine" />
@@ -71,7 +78,7 @@ export default async function Page({
         </div>
       ) : (
         <div className="animate-fade-in mt-8 space-y-12">
-          <DispatcherBoard cards={board.cards} repo={board.repo} />
+          <DispatcherBoard cards={open} repo={board.repo} />
           <ReadinessDistribution data={stats} />
           <SplitTrees trees={trees} />
         </div>
