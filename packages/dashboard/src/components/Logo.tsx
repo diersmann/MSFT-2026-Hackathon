@@ -1,11 +1,6 @@
 export function Logo({ className = 'h-6 w-6' }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      role="img"
-      aria-label="GitSolutions"
-    >
+    <svg viewBox="0 0 24 24" className={className} role="img" aria-label="Dispatch">
       <defs>
         <linearGradient id="gs-logo-bg" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#2f81f7" />
@@ -13,12 +8,7 @@ export function Logo({ className = 'h-6 w-6' }: { className?: string }) {
         </linearGradient>
       </defs>
       <rect width="24" height="24" rx="6" fill="url(#gs-logo-bg)" />
-      <g
-        stroke="#f0f6fc"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        fill="none"
-      >
+      <g stroke="#f0f6fc" strokeWidth="1.4" strokeLinecap="round" fill="none">
         <path d="M12 17.3 L12 12.5" />
         <path d="M12 12.5 L7.4 7.3" />
         <path d="M12 12.5 L16.6 7.3" />

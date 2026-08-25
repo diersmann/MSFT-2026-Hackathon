@@ -25,7 +25,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ r
     <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="sticky top-0 z-20 -mx-6 mb-8 flex items-center gap-2.5 border-b border-edge bg-ink/85 px-6 py-2.5 text-sm backdrop-blur supports-[backdrop-filter]:bg-ink/70">
         <Logo className="h-5 w-5 shrink-0" />
-        <span className="font-semibold text-slate-100">GitSolutions</span>
+        <span className="font-semibold text-slate-100">Dispatch</span>
         <span className="text-edge">/</span>
         <a
           href={`https://github.com/${board.repo}`}
@@ -38,7 +38,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ r
       </div>
 
       <header className="animate-fade-in border-b border-edge pb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-50">GitSolutions</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-50">Dispatch</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
           A project board as a dispatcher between human and machine work, rather than a list. Issues
           are scored for agent-readiness on arrival; epics are split into real sub-issues and the
