@@ -7,8 +7,8 @@ export function ReadinessDistribution({ data }: { data: Distribution }) {
     <section>
       <h2 className="text-lg font-semibold text-slate-100">Readiness distribution</h2>
       <p className="mt-1 text-sm text-muted">
-        If every issue landed on the same number, the rubric would be a thermometer in a sealed room.
-        Spread is the point. Open issues only.
+        If every issue landed on the same number, the rubric would be a thermometer in a sealed
+        room. Spread is the point. Open issues only.
       </p>
 
       <div className="mt-4">
@@ -39,8 +39,8 @@ export function ReadinessDistribution({ data }: { data: Distribution }) {
           {data.disputed > 0 && (
             <p className="mt-4 border-t border-edge pt-3 text-xs text-muted">
               <span className="text-bad">{data.disputed}</span> verdict
-              {data.disputed === 1 ? '' : 's'} disputed by a human 👎 — the honest measure of whether
-              the rubric works.
+              {data.disputed === 1 ? '' : 's'} disputed by a human 👎 — the honest measure of
+              whether the rubric works.
             </p>
           )}
         </div>

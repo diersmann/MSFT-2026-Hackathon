@@ -30,9 +30,12 @@ test('strips the organizer example-issue notice', () => {
 });
 
 test('keeps alert blocks that carry real content', () => {
-  const raw = ['> [!WARNING]', '> This migration drops the audit table.', '', 'Details follow.'].join(
-    '\n',
-  );
+  const raw = [
+    '> [!WARNING]',
+    '> This migration drops the audit table.',
+    '',
+    'Details follow.',
+  ].join('\n');
   const result = normalizeBody(raw);
   assert.ok(result.body.includes('drops the audit table'));
 });
@@ -59,7 +62,9 @@ test('treats a whitespace-only section as empty', () => {
 });
 
 test('counts images and replaces them with placeholders', () => {
-  const result = normalizeBody('Repro:\n\n![console error](https://example.com/a.png)\n\n<img alt="trace" src="b.png">');
+  const result = normalizeBody(
+    'Repro:\n\n![console error](https://example.com/a.png)\n\n<img alt="trace" src="b.png">',
+  );
   assert.equal(result.images, 2);
   assert.ok(result.body.includes('[image: console error]'));
   assert.ok(result.body.includes('[image: trace]'));
@@ -67,7 +72,9 @@ test('counts images and replaces them with placeholders', () => {
 });
 
 test('collects links without duplicating markdown targets', () => {
-  const result = normalizeBody('See [docs](https://example.com/docs) and https://example.com/other');
+  const result = normalizeBody(
+    'See [docs](https://example.com/docs) and https://example.com/other',
+  );
   assert.ok(result.links.includes('https://example.com/docs'));
   assert.ok(result.links.includes('https://example.com/other'));
 });

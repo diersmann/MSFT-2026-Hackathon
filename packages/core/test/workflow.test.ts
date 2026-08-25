@@ -24,9 +24,7 @@ function parseReclassify(comment: string): string {
 /** The whole-command guard, as written in the workflow. */
 function isSplitCommand(comment: string): boolean {
   const script = `if echo "$1" | grep -qE '^/split([[:space:]]|$)'; then echo yes; else echo no; fi`;
-  return (
-    execFileSync('bash', ['-c', script, '--', comment], { encoding: 'utf8' }).trim() === 'yes'
-  );
+  return execFileSync('bash', ['-c', script, '--', comment], { encoding: 'utf8' }).trim() === 'yes';
 }
 
 test('reclassify parses with and without the hash', () => {

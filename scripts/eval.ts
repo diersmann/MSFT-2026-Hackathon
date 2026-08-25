@@ -138,7 +138,9 @@ async function main(): Promise<void> {
   );
   if (scoreTotal) {
     console.log(`score exact  ${scoreExact}/${scoreTotal} (${pct(scoreExact, scoreTotal)})`);
-    console.log(`score ±1     ${scoreWithinOne}/${scoreTotal} (${pct(scoreWithinOne, scoreTotal)})`);
+    console.log(
+      `score ±1     ${scoreWithinOne}/${scoreTotal} (${pct(scoreWithinOne, scoreTotal)})`,
+    );
   }
   console.log('');
   for (const key of SIGNAL_KEYS) {

@@ -69,10 +69,7 @@ test('a fixture expects either a score or a non-scored status, never both', () =
   for (const fixture of workItems) {
     const hasScore = fixture.expected.score !== undefined;
     const hasStatus = fixture.expected.status !== undefined;
-    assert.ok(
-      hasScore !== hasStatus,
-      `${fixture.id}: must expect exactly one of score or status`,
-    );
+    assert.ok(hasScore !== hasStatus, `${fixture.id}: must expect exactly one of score or status`);
   }
 });
 

@@ -115,7 +115,8 @@ function plausible(candidate: string): boolean {
     const segments = candidate.split('/').filter(Boolean);
     if (segments.length < 2) return false;
     if (segments.some((s) => s.length > 40)) return false;
-    const dirLike = /^(src|lib|app|test|tests|spec|packages|docs|scripts|api|components|pages|public|config|server|client|internal|cmd|pkg|\.github|node_modules|dist|build)$/i;
+    const dirLike =
+      /^(src|lib|app|test|tests|spec|packages|docs|scripts|api|components|pages|public|config|server|client|internal|cmd|pkg|\.github|node_modules|dist|build)$/i;
     if (!dirLike.test(segments[0] ?? '')) return false;
   }
 
@@ -212,7 +213,8 @@ export async function loadTree(
       if (entry.type === 'tree') directories.add(entry.path);
 
       const first = entry.path.split('/')[0];
-      if (first) topLevel.add(entry.type === 'tree' || entry.path.includes('/') ? `${first}/` : first);
+      if (first)
+        topLevel.add(entry.type === 'tree' || entry.path.includes('/') ? `${first}/` : first);
     }
 
     const entry: TreeCacheEntry = {

@@ -140,7 +140,10 @@ export function routeChild(
   missingPaths: string[],
 ): { route: Route; routeReason: string } {
   if (classification.confidence === 'low') {
-    return { route: 'judgement', routeReason: 'the classifier was not confident, so a human decides' };
+    return {
+      route: 'judgement',
+      routeReason: 'the classifier was not confident, so a human decides',
+    };
   }
   if (classification.requiresTaste) {
     return { route: 'judgement', routeReason: classification.reasoning };

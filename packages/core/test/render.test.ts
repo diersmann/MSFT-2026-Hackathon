@@ -92,9 +92,7 @@ test('the pinned commit appears only when a path was actually checked', () => {
   const withoutPaths = renderComment(scored(2))!;
   assert.ok(!withoutPaths.includes('Repo pinned'));
 
-  const withPaths = renderComment(
-    scored(2, { paths: [{ path: 'src/index.ts', exists: true }] }),
-  )!;
+  const withPaths = renderComment(scored(2, { paths: [{ path: 'src/index.ts', exists: true }] }))!;
   assert.match(withPaths, /Repo pinned at `abcdef1`/);
 });
 

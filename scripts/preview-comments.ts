@@ -34,9 +34,7 @@ function signal(pass: boolean, why: string) {
   return { pass, why };
 }
 
-function routing(
-  overrides: Partial<Readiness['routing']> = {},
-): Readiness['routing'] {
+function routing(overrides: Partial<Readiness['routing']> = {}): Readiness['routing'] {
   return {
     outcomeFullyDetermined: false,
     diffVerifiableWithoutOpinion: false,
@@ -92,7 +90,10 @@ const cases: Array<{ label: string; result: ReadinessResult }> = [
         signals: {
           observableOutcome: signal(true, 'The header either appears or it does not.'),
           scope: signal(true, 'One endpoint, one header.'),
-          context: signal(false, 'Names the route but not the handler file, so an agent must go looking.'),
+          context: signal(
+            false,
+            'Names the route but not the handler file, so an agent must go looking.',
+          ),
           ambiguity: signal(false, '"like the rest of the API" is load-bearing and undefined.'),
         },
         weakest: 'ambiguity',
@@ -203,7 +204,10 @@ const cases: Array<{ label: string; result: ReadinessResult }> = [
         suggestion:
           'Describe the defect in words as well as the image: "on /settings the save button overlaps the footer below 400px width". An agent cannot see the screenshot.',
         issueType: 'bug',
-        routing: routing({ requiresTaste: true, reasoning: 'what "correct" looks like is a visual judgement' }),
+        routing: routing({
+          requiresTaste: true,
+          reasoning: 'what "correct" looks like is a visual judgement',
+        }),
         confidence: 'high',
         abstainReason: null,
       },
@@ -274,10 +278,7 @@ for (const testCase of cases) {
   }
 
   const plan = planLabels(testCase.result);
-  const labels = [
-    ...plan.add.map((l) => `+${l}`),
-    ...plan.remove.map((l) => `-${l}`),
-  ];
+  const labels = [...plan.add.map((l) => `+${l}`), ...plan.remove.map((l) => `-${l}`)];
   console.log(`  labels: ${labels.length ? labels.join(' ') : '(none)'}`);
   console.log(`  chars:  ${comment?.length ?? 0}`);
 }

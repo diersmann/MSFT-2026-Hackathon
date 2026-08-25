@@ -4,10 +4,17 @@
 
 Two things, sharing one engine:
 
-1. **Agent-readiness linter** — scores every new issue out of 4 and leaves *one* concrete suggestion. Never blocks. Says "I can't judge this" instead of inventing a number.
+1. **Agent-readiness linter** — scores every new issue out of 4 and leaves _one_ concrete suggestion. Never blocks. Says "I can't judge this" instead of inventing a number.
 2. **`/split`** — decomposes an epic into real GitHub sub-issues, works out which are mechanical, and hands only those to the Copilot coding agent.
 
-Built for the Microsoft Hackathon 2026 challenge *Collaboration using GitHub Planning & Tracking Tools in the Agentic Age*. Adapted from organizer ideas [#3](https://github.com/reneexeener/msft-hackathon-2026/issues/3) and [#4](https://github.com/reneexeener/msft-hackathon-2026/issues/4).
+Built for the Microsoft Hackathon 2026 challenge _Collaboration using GitHub Planning & Tracking Tools in the Agentic Age_. Adapted from organizer ideas [#3](https://github.com/reneexeener/msft-hackathon-2026/issues/3) and [#4](https://github.com/reneexeener/msft-hackathon-2026/issues/4).
+
+|                     |                                                                                                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Live dashboard**  | https://dispatch-dashboard.thankfulmushroom-c8f31c24.swedencentral.azurecontainerapps.io/                                                                                      |
+| **Playground repo** | [sametd04/widgetworks-playground](https://github.com/sametd04/widgetworks-playground) — both bots are installed there, so the labels on its issues were applied by this engine |
+
+The dashboard scales to zero, so the first request after an idle period takes a few seconds.
 
 ---
 
@@ -37,7 +44,7 @@ flowchart LR
 
 **Booleans, not a number.** The model returns four pass/fail signals with evidence; the score is `count(passes)` computed in code. Ask a model for "a score out of 4" and it will hand you a plausible 3 without committing to which signal failed.
 
-**The routing asymmetry is the safety property.** A wrongly-human item costs someone ten minutes. A wrongly-agent item costs a confident pull request embodying a decision nobody made. So `mechanical` requires *all* of: outcome fully determined, diff verifiable without opinion, no taste required, classifier confident, and every named path verified. Any doubt collapses to `judgement`. There's a test asserting no single failing condition can be outvoted by the others.
+**The routing asymmetry is the safety property.** A wrongly-human item costs someone ten minutes. A wrongly-agent item costs a confident pull request embodying a decision nobody made. So `mechanical` requires _all_ of: outcome fully determined, diff verifiable without opinion, no taste required, classifier confident, and every named path verified. Any doubt collapses to `judgement`. There's a test asserting no single failing condition can be outvoted by the others.
 
 ---
 
@@ -60,11 +67,11 @@ npm run smoke
 
 This lists what your key can reach and confirms strict `json_schema` works on each configured deployment. Fill in `.env` from its output.
 
-| Variable | Purpose |
-| --- | --- |
-| `MODEL_SCORE` | Readiness scoring. Runs on every issue, so a mini model is right. |
-| `MODEL_DECOMPOSE` | Epic decomposition. Runs rarely, quality is visible. |
-| `MODEL_CLASSIFY` | Mechanical vs judgement. The one genuinely risky call — worth a reasoning model. |
+| Variable          | Purpose                                                                          |
+| ----------------- | -------------------------------------------------------------------------------- |
+| `MODEL_SCORE`     | Readiness scoring. Runs on every issue, so a mini model is right.                |
+| `MODEL_DECOMPOSE` | Epic decomposition. Runs rarely, quality is visible.                             |
+| `MODEL_CLASSIFY`  | Mechanical vs judgement. The one genuinely risky call — worth a reasoning model. |
 
 ### 3. Score an issue locally
 
@@ -117,7 +124,18 @@ DISPATCH_TARGET_REPO=owner/playground \
 npm run dev --workspace @dispatch/dashboard
 ```
 
-Deploy to Vercel from repo root (`vercel.json` is configured). Set `GITHUB_TOKEN`, `DISPATCH_TARGET_REPO`, and the Azure variables in the project settings.
+The board shows only open work — closed issues leave it, so it reads as a queue rather than an archive.
+
+To deploy, the repo root builds as a container (`Dockerfile`, standalone Next output). Ours runs on Azure Container Apps:
+
+```bash
+az containerapp up \
+  --name dispatch-dashboard --resource-group dispatch-rg \
+  --source . --ingress external --target-port 3000 \
+  --env-vars GITHUB_TOKEN=<pat> DISPATCH_TARGET_REPO=owner/playground
+```
+
+`GITHUB_TOKEN` and `DISPATCH_TARGET_REPO` are the only required runtime variables; the Azure model variables are needed only if you use the board's rescore and reclassify buttons.
 
 ---
 
@@ -126,7 +144,7 @@ Deploy to Vercel from repo root (`vercel.json` is configured). Set `GITHUB_TOKEN
 A linter nobody checks is just opinions with a progress bar.
 
 ```bash
-npm test          # 89 unit tests, no Azure needed
+npm test          # 105 unit tests, no credentials needed
 npm run eval      # rubric vs 16 hand-labeled fixtures
 npm run backfill -- --repo owner/name --limit 50
 ```
@@ -157,7 +175,7 @@ npm run preview          # every readiness comment variant
 npm run preview:split    # the /split parent summary and a child body
 ```
 
-Both render from synthetic results, so they cost nothing and work with no credentials. The comment *is* the product surface for the linter — if any variant reads as a wall of feedback rather than one suggestion, the prompt needs tightening.
+Both render from synthetic results, so they cost nothing and work with no credentials. The comment _is_ the product surface for the linter — if any variant reads as a wall of feedback rather than one suggestion, the prompt needs tightening.
 
 ---
 
@@ -179,6 +197,7 @@ packages/dashboard/ Next.js dispatcher board
 fixtures/           hand-labeled work items + captured organizer issues
 scripts/            smoke, eval, backfill, seed, inspect
 demo-repo/          a deliberately ordinary app to check paths against
+Dockerfile          standalone build, deployed to Azure Container Apps
 ```
 
 ---

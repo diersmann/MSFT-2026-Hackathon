@@ -13,7 +13,10 @@ beforeEach(() => {
  * against a known tree is the only way to prove the stale-path detection that
  * the whole L2 argument rests on.
  */
-function fakeOctokit(paths: Array<{ path: string; type: 'blob' | 'tree' }>, options: { truncated?: boolean; fail?: boolean } = {}) {
+function fakeOctokit(
+  paths: Array<{ path: string; type: 'blob' | 'tree' }>,
+  options: { truncated?: boolean; fail?: boolean } = {},
+) {
   return {
     repos: {
       get: async () => ({ data: { default_branch: 'main' } }),
@@ -72,24 +75,44 @@ test('a file that does not exist is caught — the stale-reference case', async 
 });
 
 test('a directory reference resolves', async () => {
-  const result = await groundPaths(fakeOctokit(TREE), 'acme', 'widgets', 'Everything in `src/settings` needs updating.');
+  const result = await groundPaths(
+    fakeOctokit(TREE),
+    'acme',
+    'widgets',
+    'Everything in `src/settings` needs updating.',
+  );
   const entry = result.paths.find((p) => p.path === 'src/settings');
   assert.equal(entry?.exists, true);
 });
 
 test('an unambiguous bare filename resolves', async () => {
-  const result = await groundPaths(fakeOctokit(TREE), 'acme', 'widgets', 'Bump the version in `package.json`.');
+  const result = await groundPaths(
+    fakeOctokit(TREE),
+    'acme',
+    'widgets',
+    'Bump the version in `package.json`.',
+  );
   assert.equal(result.paths.find((p) => p.path === 'package.json')?.exists, true);
 });
 
 test('top-level layout is reported for the prompt', async () => {
-  const result = await groundPaths(fakeOctokit(TREE), 'acme', 'widgets', 'See `src/auth/login.js`.');
+  const result = await groundPaths(
+    fakeOctokit(TREE),
+    'acme',
+    'widgets',
+    'See `src/auth/login.js`.',
+  );
   assert.ok(result.topLevelPaths.includes('src/'));
   assert.ok(result.topLevelPaths.includes('docs/'));
 });
 
 test('the tree sha is recorded so a score stays explainable later', async () => {
-  const result = await groundPaths(fakeOctokit(TREE), 'acme', 'widgets', 'See `src/auth/login.js`.');
+  const result = await groundPaths(
+    fakeOctokit(TREE),
+    'acme',
+    'widgets',
+    'See `src/auth/login.js`.',
+  );
   assert.equal(result.treeSha, 'a1b2c3d4e5f6');
 });
 

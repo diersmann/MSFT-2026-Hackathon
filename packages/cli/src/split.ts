@@ -178,15 +178,11 @@ async function main(): Promise<void> {
 
   const actorId = await copilotActorId(octokit, ref);
   const copilotAvailable = Boolean(actorId);
-  console.log(
-    `\nCopilot coding agent assignable here: ${copilotAvailable ? 'yes' : 'no'}`,
-  );
+  console.log(`\nCopilot coding agent assignable here: ${copilotAvailable ? 'yes' : 'no'}`);
 
   if (!post) {
     console.log('');
-    console.log(
-      renderSplitSummary(plan, { dryRun: true, copilotAvailable }).replace(/^/gm, '  '),
-    );
+    console.log(renderSplitSummary(plan, { dryRun: true, copilotAvailable }).replace(/^/gm, '  '));
     return;
   }
 

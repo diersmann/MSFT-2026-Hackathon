@@ -110,9 +110,7 @@ export function DispatcherBoard({ cards, repo }: { cards: BoardCard[]; repo: str
     const previous = local;
     setLocal((cards) =>
       cards.map((c) =>
-        c.number === card.number
-          ? { ...c, lane: route === 'mechanical' ? 'machine' : 'human' }
-          : c,
+        c.number === card.number ? { ...c, lane: route === 'mechanical' ? 'machine' : 'human' } : c,
       ),
     );
 

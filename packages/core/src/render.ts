@@ -73,7 +73,8 @@ export function renderScored(
 
   if (meta.route) {
     const icon = meta.route === 'mechanical' ? '🤖' : '🧑';
-    const who = meta.route === 'mechanical' ? 'a coding agent could take this' : 'this wants a human';
+    const who =
+      meta.route === 'mechanical' ? 'a coding agent could take this' : 'this wants a human';
     lines.push(
       '',
       `${icon} **${meta.route}** — ${who}${meta.routeReason ? `: ${meta.routeReason}` : ''}`,
@@ -194,7 +195,10 @@ export const LABEL_DEFINITIONS: Record<string, { color: string; description: str
   'type: chore': { color: 'fef2c0', description: 'Maintenance, dependencies, tooling' },
   'type: docs': { color: '0075ca', description: 'Documentation only' },
   'type: question': { color: 'd876e3', description: 'Support or a request for information' },
-  'type: epic': { color: '5319e7', description: 'Several changes bundled — a candidate for /split' },
+  'type: epic': {
+    color: '5319e7',
+    description: 'Several changes bundled — a candidate for /split',
+  },
 };
 
 export type LabelPlan = { add: string[]; remove: string[] };

@@ -17,8 +17,8 @@ export function SplitTrees({ trees }: { trees: SplitTree[] }) {
     <section>
       <h2 className="text-lg font-semibold text-slate-100">Split trees</h2>
       <p className="mt-1 text-sm text-muted">
-        Real sub-issues, not checklists — so the parent gets its progress bar from GitHub rather than
-        from us.
+        Real sub-issues, not checklists — so the parent gets its progress bar from GitHub rather
+        than from us.
       </p>
 
       <div className="mt-4 space-y-4">

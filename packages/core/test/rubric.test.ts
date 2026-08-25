@@ -2,10 +2,17 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { LABEL_DEFINITIONS, planLabels, renderComment, READINESS_MARKER } from '../src/render.js';
 import { deriveScore, shouldSkip } from '../src/rubric.js';
-import { ISSUE_TYPES, type Readiness, type ReadinessResult, type ScoringInput } from '../src/schema.js';
+import {
+  ISSUE_TYPES,
+  type Readiness,
+  type ReadinessResult,
+  type ScoringInput,
+} from '../src/schema.js';
 import type { IssueSnapshot } from '../src/github.js';
 
-function signals(passes: Partial<Record<keyof Readiness['signals'], boolean>>): Readiness['signals'] {
+function signals(
+  passes: Partial<Record<keyof Readiness['signals'], boolean>>,
+): Readiness['signals'] {
   const make = (pass: boolean) => ({ pass, why: pass ? 'evidence for' : 'evidence against' });
   return {
     observableOutcome: make(passes.observableOutcome ?? false),
@@ -31,7 +38,10 @@ const input: ScoringInput = {
   treeTruncated: false,
 };
 
-function scored(readiness: Readiness, route: 'mechanical' | 'judgement' = 'judgement'): ReadinessResult {
+function scored(
+  readiness: Readiness,
+  route: 'mechanical' | 'judgement' = 'judgement',
+): ReadinessResult {
   return {
     status: 'scored',
     score: deriveScore(readiness),
@@ -102,7 +112,10 @@ test('agent-ready is applied only at 4/4', () => {
         .map((k) => [k, true]),
     );
     const result = scored(readiness({ signals: signals(passes) }));
-    assert.ok(!planLabels(result).add.includes('agent-ready'), `score ${score} must not be agent-ready`);
+    assert.ok(
+      !planLabels(result).add.includes('agent-ready'),
+      `score ${score} must not be agent-ready`,
+    );
   }
 
   const perfect = scored(

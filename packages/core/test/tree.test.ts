@@ -58,7 +58,10 @@ test('drops trailing punctuation', () => {
 });
 
 test('returns nothing for issues that name no files', () => {
-  assert.deepEqual(extractPathCandidates('Login is broken for some users, please fix properly.'), []);
+  assert.deepEqual(
+    extractPathCandidates('Login is broken for some users, please fix properly.'),
+    [],
+  );
 });
 
 test('caps the number of candidates', () => {

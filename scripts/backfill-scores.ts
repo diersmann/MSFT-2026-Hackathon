@@ -200,11 +200,7 @@ async function main(): Promise<void> {
   const outPath = join(OUT_DIR, 'scores.json');
   writeFileSync(
     outPath,
-    JSON.stringify(
-      { generatedAt: new Date().toISOString(), repo: repoArg, records },
-      null,
-      2,
-    ),
+    JSON.stringify({ generatedAt: new Date().toISOString(), repo: repoArg, records }, null, 2),
   );
 
   report(records, repoArg);
@@ -267,7 +263,9 @@ function report(records: Record_[], repo: string): void {
   console.log('\n════ Does readiness predict anything? ════');
   const closed = scored.filter((r) => r.hoursToClose !== null);
   if (closed.length < 3) {
-    console.log(`Only ${closed.length} closed work item(s) scored — not enough to say. Honest answer: unknown.`);
+    console.log(
+      `Only ${closed.length} closed work item(s) scored — not enough to say. Honest answer: unknown.`,
+    );
     return;
   }
 

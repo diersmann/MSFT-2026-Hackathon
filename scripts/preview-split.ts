@@ -115,9 +115,13 @@ const children: ClassifiedChild[] = [
   ),
 ];
 
-const plan = { status: 'planned' as const, summary:
-  'Cut along the mechanical/judgement seam rather than by file: the prop renames and the reducer extraction are determined by the existing code, while the layout and the accessibility review need a person.',
-  children, input };
+const plan = {
+  status: 'planned' as const,
+  summary:
+    'Cut along the mechanical/judgement seam rather than by file: the prop renames and the reducer extraction are determined by the existing code, while the layout and the accessibility review need a person.',
+  children,
+  input,
+};
 
 console.log('═'.repeat(78));
 console.log('  PARENT SUMMARY COMMENT');

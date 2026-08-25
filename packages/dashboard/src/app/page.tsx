@@ -5,11 +5,7 @@ import { distribution, loadBoard, openOnly, splitTrees } from '@/lib/data';
 
 export const dynamic = 'force-dynamic';
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: Promise<{ repo?: string }>;
-}) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ repo?: string }> }) {
   const params = await searchParams;
   const board = await loadBoard(params.repo);
 
@@ -72,7 +68,9 @@ export default async function Page({
             The dashboard reads live from the GitHub GraphQL API. It needs{' '}
             <code className="rounded bg-panel px-1 py-0.5 text-slate-300">GITHUB_TOKEN</code> with
             read access to {board.repo}, and{' '}
-            <code className="rounded bg-panel px-1 py-0.5 text-slate-300">DISPATCH_TARGET_REPO</code>{' '}
+            <code className="rounded bg-panel px-1 py-0.5 text-slate-300">
+              DISPATCH_TARGET_REPO
+            </code>{' '}
             to point at the right repository.
           </p>
         </div>
@@ -86,9 +84,9 @@ export default async function Page({
 
       <footer className="mt-14 border-t border-edge pt-5 text-xs leading-relaxed text-muted">
         <p>
-          The classify step is the risky one. An agent that assigns itself a design decision produces
-          a confident, wrong pull request — so routing is biased hard toward humans whenever the
-          classifier is unsure, and every card here is one click from the other lane.
+          The classify step is the risky one. An agent that assigns itself a design decision
+          produces a confident, wrong pull request — so routing is biased hard toward humans
+          whenever the classifier is unsure, and every card here is one click from the other lane.
         </p>
         <p className="mt-2">Read live at {new Date(board.generatedAt).toUTCString()}.</p>
       </footer>

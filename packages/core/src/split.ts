@@ -150,11 +150,7 @@ export async function planSplit(
 }
 
 /** Node id lookup, needed for the GraphQL sub-issue and assignment mutations. */
-async function issueNodeId(
-  octokit: Octokit,
-  ref: RepoRef,
-  issueNumber: number,
-): Promise<string> {
+async function issueNodeId(octokit: Octokit, ref: RepoRef, issueNumber: number): Promise<string> {
   const result = await octokit.graphql<{
     repository: { issue: { id: string } };
   }>(

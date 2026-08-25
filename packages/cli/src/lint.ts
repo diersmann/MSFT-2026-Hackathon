@@ -165,7 +165,11 @@ async function main(): Promise<void> {
     try {
       const result = await run(octokit, ref, issue, options);
       const key =
-        result.status === 'scored' ? `${result.score}/4` : result.status === 'skipped' ? 'skipped' : 'abstained';
+        result.status === 'scored'
+          ? `${result.score}/4`
+          : result.status === 'skipped'
+            ? 'skipped'
+            : 'abstained';
       tally[key] = (tally[key] ?? 0) + 1;
     } catch (error) {
       console.log(`    error: ${(error as Error).message}`);

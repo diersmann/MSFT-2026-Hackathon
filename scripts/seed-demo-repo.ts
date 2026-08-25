@@ -60,7 +60,14 @@ async function main(): Promise<void> {
   if (has('create')) {
     console.log(`Creating ${repoArg} ...`);
     try {
-      gh(['repo', 'create', repoArg, '--public', '--description', 'Playground for the agent-readiness linter and /split. Deliberately ordinary code.']);
+      gh([
+        'repo',
+        'create',
+        repoArg,
+        '--public',
+        '--description',
+        'Playground for the agent-readiness linter and /split. Deliberately ordinary code.',
+      ]);
       console.log('  created');
     } catch (error) {
       console.log(`  skipped: ${(error as Error).message.split('\n')[0]}`);
@@ -112,7 +119,13 @@ async function main(): Promise<void> {
     'ededed',
     'The readiness linter could not score this confidently',
   );
-  await ensureLabel(octokit, ref, 'mechanical', '0e8a16', 'Outcome fully determined; a diff can be verified without opinion');
+  await ensureLabel(
+    octokit,
+    ref,
+    'mechanical',
+    '0e8a16',
+    'Outcome fully determined; a diff can be verified without opinion',
+  );
   await ensureLabel(octokit, ref, 'judgement', 'fbca04', 'Needs a human decision');
   console.log('  done');
 
@@ -147,7 +160,9 @@ async function main(): Promise<void> {
   console.log(`       gh secret set AZURE_OPENAI_ENDPOINT --repo ${repoArg}`);
   console.log(`       gh secret set AZURE_OPENAI_API_KEY --repo ${repoArg}`);
   console.log(`  2. Point it at the engine and pick models:`);
-  console.log(`       gh variable set DISPATCH_ENGINE_REPO --repo ${repoArg} --body <owner/engine-repo>`);
+  console.log(
+    `       gh variable set DISPATCH_ENGINE_REPO --repo ${repoArg} --body <owner/engine-repo>`,
+  );
   console.log(`       gh variable set MODEL_SCORE --repo ${repoArg} --body <deployment>`);
   console.log(`  3. Install the workflows:  ./scripts/install-workflow.sh ${repoArg}`);
   console.log(`  4. Dry-run locally:        npm run lint -- --repo ${repoArg} --all`);
