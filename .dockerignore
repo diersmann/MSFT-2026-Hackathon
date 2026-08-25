@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.env
+.env.local
+dist
+*.tsbuildinfo
+data/*.json
+demo-repo
+fixtures
+docs
+*.md
