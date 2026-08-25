@@ -9,7 +9,7 @@ const sans = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Dispatch — human and machine work, side by side',
+  title: 'GitSolutions — human and machine work, side by side',
   description:
     'Agent-readiness scores and mechanical-versus-judgement routing for a GitHub project board.',
 };
