@@ -34,12 +34,16 @@ done
 
 cd "$TMP/repo"
 
-if git diff --quiet && git diff --cached --quiet; then
+# Stage first: on a fresh clone the workflows are untracked, and `git diff` does
+# not report untracked files. Checking before staging reports "up to date" and
+# silently installs nothing.
+git add .github/workflows
+
+if git diff --cached --quiet; then
   echo "Already up to date."
   exit 0
 fi
 
-git add .github/workflows
 git commit -q -m "Install Dispatch workflows (readiness lint, /split)"
 git push -q
 
