@@ -1,0 +1,41 @@
+{
+  "name": "dispatch",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Agent-readiness linter and epic splitter — turning a project board into a dispatcher between human and machine work.",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "typecheck": "tsc --build --force",
+    "lint": "npm run -w @dispatch/cli lint --",
+    "split": "npm run -w @dispatch/cli split --",
+    "smoke": "tsx scripts/smoke-azure.ts",
+    "eval": "tsx scripts/eval.ts",
+    "backfill": "tsx scripts/backfill-scores.ts",
+    "seed": "tsx scripts/seed-demo-repo.ts",
+    "inspect": "tsx scripts/inspect-input.ts",
+    "preview": "tsx scripts/preview-comments.ts",
+    "preview:split": "tsx scripts/preview-split.ts",
+    "test": "node --test --import tsx packages/core/test/*.test.ts packages/dashboard/test/*.test.ts",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md,yml}\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@octokit/rest": "^21.0.2",
+    "dotenv": "^16.4.7",
+    "openai": "^4.77.0",
+    "zod": "^3.24.1"
+  }
+}

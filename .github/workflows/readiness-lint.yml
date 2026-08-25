@@ -1,0 +1,106 @@
+name: Agent-readiness lint
+
+# The linter is advisory. It must never be the reason an issue looks broken, so
+# every step below is written to fail open: missing secrets, model outages and
+# API errors all end in a clean exit rather than a red X on someone's issue.
+
+on:
+  issues:
+    types: [opened, edited]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue to (re-)score
+        required: true
+        type: string
+      force:
+        description: Score even if a skip label is present
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+# An edit-storm should not queue five scoring runs and burn tokens on
+# intermediate drafts. Keep only the newest run per issue.
+concurrency:
+  group: readiness-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: true
+
+jobs:
+  score:
+    name: Score issue readiness
+    runs-on: ubuntu-latest
+    # Bots opening issues would otherwise trigger the linter on their own output.
+    if: github.event_name == 'workflow_dispatch' || github.event.issue.user.type != 'Bot'
+    steps:
+      - name: Check whether Azure credentials are configured
+        id: guard
+        env:
+          AZURE_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+        run: |
+          if [ -n "$AZURE_KEY" ] && [ -n "$AZURE_ENDPOINT" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::AZURE_OPENAI_API_KEY / AZURE_OPENAI_ENDPOINT are not set - skipping readiness lint. See README."
+          fi
+
+      - name: Check out the engine
+        if: steps.guard.outputs.ready == 'true'
+        uses: actions/checkout@v4
+        with:
+          # When installed into a playground repo this pulls the engine from the
+          # code repo, so there is exactly one source of truth for the rubric.
+          repository: ${{ vars.DISPATCH_ENGINE_REPO || github.repository }}
+          ref: ${{ vars.DISPATCH_ENGINE_REF || '' }}
+
+      - name: Set up Node
+        if: steps.guard.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.guard.outputs.ready == 'true'
+        run: npm ci --no-audit --no-fund
+
+      - name: Score and comment
+        if: steps.guard.outputs.ready == 'true'
+        # Advisory means advisory: a model outage must not surface as a failed
+        # check on a contributor's issue.
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_API_VERSION: ${{ vars.AZURE_OPENAI_API_VERSION || '2024-10-21' }}
+          MODEL_SCORE: ${{ vars.MODEL_SCORE || 'gpt-4.1-mini' }}
+          MODEL_DECOMPOSE: ${{ vars.MODEL_DECOMPOSE || 'gpt-4.1' }}
+          MODEL_CLASSIFY: ${{ vars.MODEL_CLASSIFY || 'o4-mini' }}
+          TARGET_REPO: ${{ github.event.repository.full_name || github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          ARGS="--repo $TARGET_REPO --issue $ISSUE_NUMBER --post"
+          if [ "$FORCE" = "true" ]; then ARGS="$ARGS --force"; fi
+          npx tsx packages/cli/src/lint.ts $ARGS | tee "$RUNNER_TEMP/lint.log"
+
+      - name: Summarise
+        if: always() && steps.guard.outputs.ready == 'true'
+        run: |
+          {
+            echo "### Agent-readiness lint"
+            echo ""
+            if [ -f "$RUNNER_TEMP/lint.log" ]; then
+              echo '```'
+              head -c 8000 "$RUNNER_TEMP/lint.log"
+              echo '```'
+            else
+              echo "No output captured - the scoring step did not run."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,62 @@
+[
+  {
+    "title": "Modernise the settings page",
+    "labels": ["enhancement", "epic"],
+    "note": "The /split target. Deliberately vague, deliberately several changes welded together.",
+    "body": "The settings page feels dated compared to the rest of the app. We should bring it up to standard.\n\nBroadly this means moving it onto the new design system, tidying up how state is handled, making it work properly on mobile, and improving the accessibility story while we're in there. Some of this is mechanical, some of it needs a designer's eye.\n\nRelevant code lives in `src/settings/`."
+  },
+  {
+    "title": "Fix the login bug",
+    "labels": ["bug"],
+    "note": "The canonical 0/4. Should score 0 and get a concrete rewrite suggestion.",
+    "body": "Login is broken for some users, please fix properly."
+  },
+  {
+    "title": "Replace moment() with date-fns in src/reports/export.js",
+    "labels": ["chore"],
+    "note": "Should score 4/4 and earn agent-ready. Real file, real mapping, checkable done.",
+    "body": "`src/reports/export.js` still imports moment. `date-fns` is already a dependency and used elsewhere.\n\nSwap the two call sites:\n\n- `formatDate(d)` — `moment(d).format('YYYY-MM-DD')` becomes `format(d, 'yyyy-MM-dd')`\n- `nextDay(d)` — `moment(d).add(1, 'day').toDate()` becomes `addDays(d, 1)`\n\nDone when: `moment` no longer appears in `src/reports/export.js`, the `moment` dependency is removed from `package.json`, and `npm test` passes with CSV output unchanged."
+  },
+  {
+    "title": "Remove the unused legacy adapter in src/legacy/adapter-v1.js",
+    "labels": ["chore"],
+    "note": "THE L2 DEMO BEAT. Reads like a perfect 4/4 issue but names a file that does not exist. Text-only analysis cannot catch this.",
+    "body": "`src/legacy/adapter-v1.js` is no longer imported anywhere since the v2 migration. Delete it, and drop the corresponding export from `src/legacy/index.js`.\n\nDone when both files are gone from the tree and `npm test` still passes."
+  },
+  {
+    "title": "Rate limit headers missing on /api/search",
+    "labels": ["bug"],
+    "note": "Mid-range. Should land around 2-3/4 — checkable and small, but 'like the rest of the API' is load-bearing.",
+    "body": "The `/api/search` endpoint does not return `X-RateLimit-Remaining`, unlike our other endpoints. It should behave like the rest of the API."
+  },
+  {
+    "title": "CSV export drops the last row at exactly 1000 entries",
+    "labels": ["bug"],
+    "note": "Strong context via reproduction steps rather than paths. Should score high.",
+    "body": "Steps to reproduce:\n\n1. Create a project with exactly 1000 issues.\n2. Call `exportProject(project)` from `src/reports/export.js`.\n3. Count the rows in the result.\n\nExpected: 1000 data rows plus a header.\nActual: 999 data rows plus a header — the final row is missing.\n\nCorrect at 999 and 1001 entries, so this looks like an off-by-one against the `RATE_LIMIT * 10` slice."
+  },
+  {
+    "title": "Make the dashboard faster",
+    "labels": ["performance"],
+    "note": "Unfalsifiable. No target, no measurement, no location.",
+    "body": "The dashboard is slow. Users have complained. Let's optimise it."
+  },
+  {
+    "title": "Session timeout should be configurable",
+    "labels": ["enhancement"],
+    "note": "Names a real file and a real constant, but leaves the mechanism open. Should sit mid-range.",
+    "body": "`src/auth/login.js` hardcodes `SESSION_TTL_MINUTES = 30`. Some deployments want a longer window.\n\nMake it configurable."
+  },
+  {
+    "title": "Typo in docs/releasing.md: 'recieve' should be 'receive'",
+    "labels": ["good first issue"],
+    "note": "Trivially ready. Small scope must not be penalised.",
+    "body": "`docs/releasing.md` has \"recieve\" where it should read \"receive\". One-character fix."
+  },
+  {
+    "title": "How do I run the tests locally?",
+    "labels": ["question"],
+    "note": "Not a work item. The bot should abstain rather than score it 0.",
+    "body": "I cloned the repo but `npm test` fails with a module resolution error. Am I missing a setup step?"
+  }
+]

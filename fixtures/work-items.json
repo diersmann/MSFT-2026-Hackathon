@@ -1,0 +1,247 @@
+[
+  {
+    "id": "login-bug-vague",
+    "note": "The canonical bad issue from the challenge text. If this scores above 1 the rubric is broken.",
+    "title": "Fix the login bug",
+    "body": "Login is broken for some users, please fix properly.",
+    "labels": ["bug"],
+    "expected": {
+      "score": 0,
+      "signals": {
+        "observableOutcome": false,
+        "scope": false,
+        "context": false,
+        "ambiguity": false
+      },
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "moment-to-datefns",
+    "note": "Textbook mechanical work: exact file, exact lines, explicit mapping, checkable done.",
+    "title": "Replace deprecated moment() calls in src/reports/export.ts with date-fns",
+    "body": "`src/reports/export.ts` still imports moment (lines 12, 48, 96). Swap each call for the date-fns equivalent already used elsewhere in `src/reports/`.\n\n- `formatDate(d)` becomes `format(d, 'yyyy-MM-dd')`\n- `moment(d).add(1, 'day')` becomes `addDays(d, 1)`\n\nDone when: moment no longer appears in the file, `npm test` passes, and exported CSV dates are byte-identical to before.",
+    "labels": ["chore"],
+    "expected": {
+      "score": 4,
+      "signals": {
+        "observableOutcome": true,
+        "scope": true,
+        "context": true,
+        "ambiguity": true
+      },
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "rate-limit-headers",
+    "note": "Mid-range. Checkable and small, but leans on an undefined 'like the rest of the API'.",
+    "title": "Rate limit headers missing on /api/search",
+    "body": "The `/api/search` endpoint does not return `X-RateLimit-Remaining`, unlike our other endpoints. Should behave like the rest of the API.",
+    "labels": ["bug"],
+    "expected": {
+      "score": 2,
+      "signals": {
+        "observableOutcome": true,
+        "scope": true,
+        "context": false,
+        "ambiguity": false
+      },
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "modernise-settings",
+    "note": "An epic wearing a task's clothes. This is exactly what /split exists for.",
+    "title": "Modernise the settings page",
+    "body": "The settings page feels dated. We should migrate it to the new design system, clean up the state management, make it responsive, and improve the accessibility story while we're in there.",
+    "labels": ["enhancement"],
+    "expected": {
+      "score": 0,
+      "signals": {
+        "observableOutcome": false,
+        "scope": false,
+        "context": false,
+        "ambiguity": false
+      },
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "stale-path",
+    "note": "L2 discriminator. Reads well but names a file that does not exist, so context must fail. L0 cannot catch this.",
+    "title": "Remove the unused legacy adapter in src/legacy/adapter-v1.ts",
+    "body": "`src/legacy/adapter-v1.ts` is no longer imported anywhere. Delete it and drop the corresponding entry from `src/legacy/index.ts`. Done when the file is gone and the build still passes.",
+    "labels": ["chore"],
+    "groundingRequired": true,
+    "expected": {
+      "score": 3,
+      "signals": {
+        "observableOutcome": true,
+        "scope": true,
+        "context": false,
+        "ambiguity": true
+      },
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "empty-body",
+    "note": "Must abstain, not score. Issue #3 is explicit that inventing a number here is the failure.",
+    "title": "Bug",
+    "body": "",
+    "labels": [],
+    "expected": {
+      "status": "abstained"
+    }
+  },
+  {
+    "id": "template-untouched",
+    "note": "Every field skipped. GitHub renders _No response_, and normalize must surface that.",
+    "title": "[Task] ",
+    "body": "### Team name\n\n_No response_\n\n### What needs doing?\n\n_No response_\n\n### How will you know it's done?\n\n_No response_",
+    "labels": ["type: team-task"],
+    "expected": {
+      "status": "abstained"
+    }
+  },
+  {
+    "id": "idea-issue-skipped",
+    "note": "Scope gate. Ideas have no code target, so the rubric does not apply.",
+    "title": "[Idea] A bot that summarises standups",
+    "body": "It would be nice if a bot read the standup channel and posted a summary to the board every morning.",
+    "labels": ["type: idea"],
+    "expected": {
+      "status": "skipped"
+    }
+  },
+  {
+    "id": "repro-steps-good",
+    "note": "Strong context via reproduction steps rather than file paths — both should pass context.",
+    "title": "CSV export drops the last row when the file has exactly 1000 entries",
+    "body": "Steps to reproduce:\n\n1. Create a project with exactly 1000 issues.\n2. Click Export → CSV.\n3. Open the downloaded file.\n\nExpected: 1000 data rows plus a header.\nActual: 999 data rows plus a header. The final row is missing.\n\nWorks correctly at 999 and 1001 entries, so this looks like an off-by-one at the pagination boundary. Error-free in the console.",
+    "labels": ["bug"],
+    "expected": {
+      "score": 4,
+      "signals": {
+        "observableOutcome": true,
+        "scope": true,
+        "context": true,
+        "ambiguity": true
+      },
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "as-discussed",
+    "note": "The 'like we discussed' failure. All the requirement lives outside the issue.",
+    "title": "Implement the caching layer as discussed",
+    "body": "Please implement the caching approach we agreed on in yesterday's sync. Same pattern as the other service.",
+    "labels": ["enhancement"],
+    "expected": {
+      "score": 0,
+      "signals": {
+        "observableOutcome": false,
+        "scope": false,
+        "context": false,
+        "ambiguity": false
+      },
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "typo-fix",
+    "note": "Trivially ready. Small scope should not be penalised.",
+    "title": "Typo in README: 'recieve' should be 'receive'",
+    "body": "`README.md` line 42 reads \"recieve the webhook\". Should be \"receive\".",
+    "labels": ["good first issue"],
+    "expected": {
+      "score": 4,
+      "signals": {
+        "observableOutcome": true,
+        "scope": true,
+        "context": true,
+        "ambiguity": true
+      },
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "five-changes-bundled",
+    "note": "Each item is individually clear, but it is five pull requests. Scope must fail even though the rest passes.",
+    "title": "Housekeeping: lint config, CI cache, dead code, deps, and docs",
+    "body": "A few unrelated things worth doing:\n\n1. Add `eslint-plugin-import` to `.eslintrc.json` and enable `import/order`.\n2. Enable npm caching in `.github/workflows/ci.yml`.\n3. Delete `src/utils/unused.ts`.\n4. Bump `typescript` to 5.7 in `package.json`.\n5. Document the release process in `docs/releasing.md`.\n\nEach one is done when the obvious check passes.",
+    "labels": ["chore"],
+    "expected": {
+      "score": 3,
+      "signals": {
+        "observableOutcome": true,
+        "scope": false,
+        "context": true,
+        "ambiguity": true
+      },
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "make-it-faster",
+    "note": "No target, no measurement. The classic unfalsifiable performance issue.",
+    "title": "Make the dashboard faster",
+    "body": "The dashboard is slow. Users have complained. Let's optimise it.",
+    "labels": ["performance"],
+    "expected": {
+      "score": 0,
+      "signals": {
+        "observableOutcome": false,
+        "scope": false,
+        "context": false,
+        "ambiguity": false
+      },
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "perf-with-budget",
+    "note": "Same topic as make-it-faster, but with a number and a location. Should score far higher.",
+    "title": "Dashboard initial render exceeds 3s budget on /projects/:id",
+    "body": "`/projects/:id` takes 4.2s to first contentful paint on a cold cache (Chrome, throttled Fast 3G). Our budget is 3s.\n\nProfiling points at `src/pages/project/ProjectBoard.tsx`, which fetches all issues before rendering any. Suggested fix: paginate the initial fetch to the first 50 items.\n\nDone when Lighthouse FCP for that route is under 3s on the same throttling profile, and the existing board tests still pass.",
+    "labels": ["performance"],
+    "expected": {
+      "score": 4,
+      "signals": {
+        "observableOutcome": true,
+        "scope": true,
+        "context": true,
+        "ambiguity": true
+      },
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "non-english",
+    "note": "Readable and specific, just not in English. Must not be penalised for language.",
+    "title": "Fehlender Zeitstempel in der Audit-Log-Tabelle",
+    "body": "In `src/audit/table.tsx` fehlt die Spalte für den Zeitstempel. Die Daten sind im API-Response vorhanden (`event.createdAt`), werden aber nicht gerendert.\n\nFertig, wenn die Tabelle eine Spalte \"Zeitstempel\" im Format `yyyy-MM-dd HH:mm` anzeigt und der bestehende Snapshot-Test aktualisiert ist.",
+    "labels": ["bug"],
+    "expected": {
+      "score": 4,
+      "signals": {
+        "observableOutcome": true,
+        "scope": true,
+        "context": true,
+        "ambiguity": true
+      },
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "question-not-work",
+    "note": "A question, not a work item. Abstaining is more honest than scoring it 0.",
+    "title": "How do I run the tests locally?",
+    "body": "I cloned the repo but `npm test` fails with a module resolution error. Is there a setup step I'm missing?",
+    "labels": ["question"],
+    "expected": {
+      "status": "abstained"
+    }
+  }
+]

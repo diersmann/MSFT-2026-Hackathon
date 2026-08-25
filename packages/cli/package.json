@@ -1,0 +1,17 @@
+{
+  "name": "@dispatch/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "dispatch": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "tsx src/lint.ts",
+    "split": "tsx src/split.ts"
+  },
+  "dependencies": {
+    "@dispatch/core": "*"
+  }
+}

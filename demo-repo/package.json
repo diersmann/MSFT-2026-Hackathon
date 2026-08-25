@@ -1,0 +1,14 @@
+{
+  "name": "widgetworks",
+  "private": true,
+  "version": "0.3.0",
+  "description": "A deliberately ordinary app, used as a playground for the readiness linter and /split.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "moment": "^2.30.1"
+  }
+}

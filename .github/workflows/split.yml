@@ -1,0 +1,142 @@
+name: Split epic
+
+# Triggered by `/split` on an issue. Creates real sub-issues, classifies each as
+# mechanical or judgement, and assigns only the mechanical ones to the Copilot
+# coding agent.
+#
+# This one writes more than the linter does, so it checks that the commenter has
+# write access first. Otherwise any passer-by could make the repo create eight
+# issues and dispatch an agent.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: split-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  split:
+    name: Decompose and route
+    runs-on: ubuntu-latest
+    # startsWith('/split') alone would also match '/splitter' or '/splitting',
+    # and a stray word should not create eight issues. The exact-command check
+    # below is the real guard; this condition just avoids spinning up a runner
+    # for every comment in the repo.
+    if: |
+      !github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/split')
+    steps:
+      - name: Check permissions and configuration
+        id: guard
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          ACTOR: ${{ github.event.comment.user.login }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "$AZURE_KEY" ] || [ -z "$AZURE_ENDPOINT" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Azure credentials are not configured - skipping /split."
+            exit 0
+          fi
+
+          PERMISSION=$(gh api "repos/$REPO/collaborators/$ACTOR/permission" --jq '.permission' 2>/dev/null || echo "none")
+          echo "Commenter $ACTOR has permission: $PERMISSION"
+
+          case "$PERMISSION" in
+            admin|write|maintain)
+              echo "ready=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "ready=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::$ACTOR does not have write access - ignoring /split."
+              gh issue comment "${{ github.event.issue.number }}" --repo "$REPO" \
+                --body "\`/split\` needs write access to this repository, so I've left this one alone. Ask a maintainer to run it."
+              ;;
+          esac
+
+      - name: Check out the engine
+        if: steps.guard.outputs.ready == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.DISPATCH_ENGINE_REPO || github.repository }}
+          ref: ${{ vars.DISPATCH_ENGINE_REF || '' }}
+
+      - name: Set up Node
+        if: steps.guard.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.guard.outputs.ready == 'true'
+        run: npm ci --no-audit --no-fund
+
+      - name: Split or reclassify
+        if: steps.guard.outputs.ready == 'true'
+        continue-on-error: true
+        env:
+          # A PAT is needed for sub-issue linking and agent assignment; the
+          # default GITHUB_TOKEN cannot always perform those mutations.
+          GITHUB_TOKEN: ${{ secrets.DISPATCH_PAT || secrets.GITHUB_TOKEN }}
+          # gh reads GH_TOKEN, not GITHUB_TOKEN, and this step shells out to it
+          # for the parse-failure reply.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_API_VERSION: ${{ vars.AZURE_OPENAI_API_VERSION || '2024-10-21' }}
+          MODEL_SCORE: ${{ vars.MODEL_SCORE || 'gpt-4.1-mini' }}
+          MODEL_DECOMPOSE: ${{ vars.MODEL_DECOMPOSE || 'gpt-4.1' }}
+          MODEL_CLASSIFY: ${{ vars.MODEL_CLASSIFY || 'o4-mini' }}
+          TARGET_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -o pipefail
+
+          # Require /split as a whole command. Without the boundary check,
+          # '/splitter' would fall past the reclassify branch and trigger a full
+          # decomposition — eight issues created from a typo.
+          if ! echo "$COMMENT_BODY" | grep -qE '^/split([[:space:]]|$)'; then
+            echo "::notice::Comment starts with /split but is not the /split command - ignoring."
+            exit 0
+          fi
+
+          # `/split reclassify #12 judgement` overrides a single classification.
+          if echo "$COMMENT_BODY" | grep -qE '^/split[[:space:]]+reclassify'; then
+            SPEC=$(echo "$COMMENT_BODY" | sed -nE 's|^/split[[:space:]]+reclassify[[:space:]]+#?([0-9]+)[[:space:]]+(mechanical\|judgement).*|\1=\2|p' | head -1)
+            if [ -z "$SPEC" ]; then
+              echo "::notice::Could not parse the reclassify request."
+              gh issue comment "$ISSUE_NUMBER" --repo "$TARGET_REPO" \
+                --body "I couldn't parse that. Use \`/split reclassify #123 mechanical\` or \`/split reclassify #123 judgement\`."
+              exit 0
+            fi
+            npx tsx packages/cli/src/split.ts --repo "$TARGET_REPO" --reclassify "$SPEC" --post \
+              | tee "$RUNNER_TEMP/split.log"
+          else
+            npx tsx packages/cli/src/split.ts --repo "$TARGET_REPO" --issue "$ISSUE_NUMBER" --post \
+              | tee "$RUNNER_TEMP/split.log"
+          fi
+
+      - name: Summarise
+        if: always() && steps.guard.outputs.ready == 'true'
+        run: |
+          {
+            echo "### /split"
+            echo ""
+            if [ -f "$RUNNER_TEMP/split.log" ]; then
+              echo '```'
+              head -c 8000 "$RUNNER_TEMP/split.log"
+              echo '```'
+            else
+              echo "No output captured."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
