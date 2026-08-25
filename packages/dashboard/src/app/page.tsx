@@ -1,4 +1,5 @@
 import { DispatcherBoard } from '@/components/DispatcherBoard';
+import { Logo } from '@/components/Logo';
 import { ReadinessDistribution } from '@/components/ReadinessDistribution';
 import { SplitTrees } from '@/components/SplitTrees';
 import { distribution, loadBoard, openOnly, splitTrees } from '@/lib/data';
@@ -26,28 +27,28 @@ export default async function Page({
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
+      <div className="sticky top-0 z-20 -mx-6 mb-8 flex items-center gap-2.5 border-b border-edge bg-ink/85 px-6 py-2.5 text-sm backdrop-blur supports-[backdrop-filter]:bg-ink/70">
+        <Logo className="h-5 w-5 shrink-0" />
+        <span className="font-semibold text-slate-100">GitSolutions</span>
+        <span className="text-edge">/</span>
+        <a
+          href={`https://github.com/${board.repo}`}
+          target="_blank"
+          rel="noreferrer"
+          className="truncate text-slate-300 transition-colors hover:text-machine hover:underline"
+        >
+          {board.repo}
+        </a>
+      </div>
+
       <header className="animate-fade-in border-b border-edge pb-6">
-        <div className="flex items-center gap-2.5">
-          <span
-            aria-hidden
-            className="h-6 w-6 shrink-0 rounded-md bg-gradient-to-br from-machine to-human shadow-card"
-          />
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-50">Dispatch</h1>
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-50">GitSolutions</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
           A project board as a dispatcher between human and machine work, rather than a list. Issues
           are scored for agent-readiness on arrival; epics are split into real sub-issues and the
           mechanical ones handed to the Copilot coding agent.
         </p>
         <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-muted">
-          <a
-            href={`https://github.com/${board.repo}`}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-full border border-edge bg-panel px-3 py-1 text-slate-300 transition hover:border-slate-500 hover:text-machine"
-          >
-            {board.repo}
-          </a>
           <span className="rounded-full border border-edge bg-panel px-3 py-1">
             {open.length} open
             {closed > 0 && <span className="text-muted"> · {closed} closed, hidden</span>}
