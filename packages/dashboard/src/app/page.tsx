@@ -20,46 +20,57 @@ export default async function Page({
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      <header className="border-b border-edge pb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-50">Dispatch</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+      <header className="animate-fade-in border-b border-edge pb-6">
+        <div className="flex items-center gap-2.5">
+          <span
+            aria-hidden
+            className="h-6 w-6 shrink-0 rounded-md bg-gradient-to-br from-machine to-human shadow-card"
+          />
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-50">Dispatch</h1>
+        </div>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
           A project board as a dispatcher between human and machine work, rather than a list. Issues
           are scored for agent-readiness on arrival; epics are split into real sub-issues and the
           mechanical ones handed to the Copilot coding agent.
         </p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-muted">
-          <span>
-            repo{' '}
-            <a
-              href={`https://github.com/${board.repo}`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-slate-300 hover:text-machine hover:underline"
-            >
-              {board.repo}
-            </a>
+        <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-muted">
+          <a
+            href={`https://github.com/${board.repo}`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full border border-edge bg-panel px-3 py-1 text-slate-300 transition hover:border-slate-500 hover:text-machine"
+          >
+            {board.repo}
+          </a>
+          <span className="rounded-full border border-edge bg-panel px-3 py-1">
+            {board.cards.length} issues
           </span>
-          <span>{board.cards.length} issues</span>
-          <span>
-            <span className="text-machine">{machine}</span> agent ·{' '}
+          <span className="flex items-center gap-1.5 rounded-full border border-edge bg-panel px-3 py-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-machine" />
+            <span className="text-machine">{machine}</span> agent
+            <span className="mx-0.5 text-edge">·</span>
+            <span className="h-1.5 w-1.5 rounded-full bg-human" />
             <span className="text-human">{human}</span> human
           </span>
         </div>
       </header>
 
       {board.error ? (
-        <div className="mt-8 rounded-xl border border-bad/40 bg-bad/5 p-5">
-          <h2 className="text-sm font-semibold text-bad">Could not load the board</h2>
+        <div className="animate-fade-in mt-8 rounded-xl border border-bad/40 bg-bad/5 p-5 shadow-card">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-bad">
+            <span aria-hidden>⚠</span> Could not load the board
+          </h2>
           <p className="mt-1 text-sm text-slate-300">{board.error}</p>
           <p className="mt-3 text-xs text-muted">
             The dashboard reads live from the GitHub GraphQL API. It needs{' '}
-            <code className="text-slate-300">GITHUB_TOKEN</code> with read access to{' '}
-            {board.repo}, and <code className="text-slate-300">DISPATCH_TARGET_REPO</code> to point
-            at the right repository.
+            <code className="rounded bg-panel px-1 py-0.5 text-slate-300">GITHUB_TOKEN</code> with
+            read access to {board.repo}, and{' '}
+            <code className="rounded bg-panel px-1 py-0.5 text-slate-300">DISPATCH_TARGET_REPO</code>{' '}
+            to point at the right repository.
           </p>
         </div>
       ) : (
-        <div className="mt-8 space-y-12">
+        <div className="animate-fade-in mt-8 space-y-12">
           <DispatcherBoard cards={board.cards} repo={board.repo} />
           <ReadinessDistribution data={stats} />
           <SplitTrees trees={trees} />

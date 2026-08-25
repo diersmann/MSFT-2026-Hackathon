@@ -12,21 +12,21 @@ export function ReadinessDistribution({ data }: { data: Distribution }) {
       </p>
 
       <div className="mt-4 grid gap-6 md:grid-cols-2">
-        <div className="rounded-xl border border-edge bg-panel/40 p-4">
-          <ul className="space-y-2">
+        <div className="rounded-xl border border-edge bg-panel/40 p-4 shadow-card">
+          <ul className="space-y-2.5">
             {data.buckets.map((bucket) => (
               <li key={String(bucket.score)} className="flex items-center gap-3">
                 <span className="w-16 shrink-0 text-xs text-muted">
                   {bucket.score === 'unscored' ? 'unscored' : `${bucket.score}/4`}
                 </span>
-                <div className="h-4 flex-1 overflow-hidden rounded bg-edge/40">
+                <div className="h-4 flex-1 overflow-hidden rounded-full bg-edge/40">
                   <div
-                    className={`h-full rounded ${
+                    className={`h-full rounded-full transition-[width] duration-500 ease-out ${
                       bucket.score === 4
-                        ? 'bg-good'
+                        ? 'bg-gradient-to-r from-good/70 to-good'
                         : bucket.score === 'unscored'
                           ? 'bg-muted/50'
-                          : 'bg-machine'
+                          : 'bg-gradient-to-r from-machine/70 to-machine'
                     }`}
                     style={{ width: `${(bucket.count / max) * 100}%` }}
                   />
@@ -45,7 +45,7 @@ export function ReadinessDistribution({ data }: { data: Distribution }) {
           )}
         </div>
 
-        <div className="rounded-xl border border-edge bg-panel/40 p-4">
+        <div className="rounded-xl border border-edge bg-panel/40 p-4 shadow-card">
           <h3 className="text-sm font-semibold text-slate-100">
             Does readiness predict anything?
           </h3>
