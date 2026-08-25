@@ -157,6 +157,40 @@ test('rendered comments carry the marker so re-runs replace rather than stack', 
   assert.ok(comment?.includes(READINESS_MARKER));
 });
 
+test('a failed scope signal suggests /split even when the issue type is not epic', () => {
+  const comment = renderComment(
+    scored(
+      readiness({
+        signals: signals({ observableOutcome: true, context: true, ambiguity: true }),
+        weakest: 'scope',
+        issueType: 'feature',
+      }),
+    ),
+  );
+
+  assert.match(comment ?? '', /Comment `\/split`/);
+});
+
+test('an epic classification suggests /split even when the scope signal passed', () => {
+  const comment = renderComment(
+    scored(
+      readiness({
+        signals: signals({ scope: true }),
+        issueType: 'epic',
+      }),
+    ),
+  );
+
+  assert.match(comment ?? '', /Comment `\/split`/);
+});
+
+test('a judgement verdict includes its reason in the comment', () => {
+  const comment = renderComment(scored(readiness(), 'judgement'));
+
+  assert.match(comment ?? '', /\*\*judgement\*\*/);
+  assert.match(comment ?? '', /\*\*Reason:\*\* test reason/);
+});
+
 test('stale path references are surfaced in the comment', () => {
   const withStale: ReadinessResult = {
     status: 'scored',
@@ -214,6 +248,13 @@ test('a scored issue gets exactly one type label and one route label', () => {
   assert.ok(plan.remove.includes('type: bug'));
   assert.ok(plan.remove.includes('mechanical'));
   assert.equal(plan.add.filter((l) => l.startsWith('type: ')).length, 1);
+});
+
+test('mechanical routing automatically sets mechanical and clears judgement', () => {
+  const plan = planLabels(scored(readiness({ issueType: 'chore' }), 'mechanical'));
+
+  assert.ok(plan.add.includes('mechanical'));
+  assert.ok(plan.remove.includes('judgement'));
 });
 
 test('re-scoring to a different type removes the previous one', () => {
