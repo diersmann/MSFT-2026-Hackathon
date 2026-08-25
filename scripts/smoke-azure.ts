@@ -1,18 +1,19 @@
 /**
- * Discovers what your Azure OpenAI resource actually exposes, then proves
- * strict structured output works on each configured deployment.
+ * Discovers what your model backend actually exposes, then proves strict
+ * structured output works on each configured model.
  *
- * Deployment names are chosen per-resource and rarely match model names, so
- * guessing them wastes a lot of time. Run this first.
+ * Azure deployment names are chosen per-resource and rarely match model names,
+ * so guessing them wastes a lot of time. Run this first.
  *
  *   npm run smoke
  */
 import 'dotenv/config';
 import {
-  azureConfigured,
   callJson,
   deploymentFor,
   isReasoningDeployment,
+  modelConfigured,
+  provider,
   type Task,
 } from '@dispatch/core';
 
@@ -67,20 +68,55 @@ async function listDeployments(): Promise<void> {
   }
 }
 
-async function main(): Promise<void> {
-  console.log('Azure OpenAI smoke test\n');
+async function listOpenAiModels(): Promise<void> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return;
+  const base = (process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/$/, '');
 
-  if (!azureConfigured()) {
-    console.error('AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY must be set.');
-    console.error('Copy .env.example to .env and fill them in.');
+  try {
+    const res = await fetch(`${base}/models`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) {
+      console.log(`  (could not list models: HTTP ${res.status})`);
+      return;
+    }
+    const json = (await res.json()) as { data?: Array<{ id?: unknown }> };
+    const ids = (json.data ?? []).map((m) => String(m.id ?? '')).filter(Boolean);
+    // The full list is long and mostly irrelevant; chat-capable families are
+    // what MODEL_* can actually be set to.
+    const chat = ids.filter((id) => /^(gpt|o[1345])/i.test(id)).sort();
+    for (const id of chat.slice(0, 40)) console.log(`  ${id}`);
+    if (chat.length > 40) console.log(`  ... and ${chat.length - 40} more`);
+    if (!chat.length) console.log('  (no chat models returned)');
+  } catch (error) {
+    console.log(`  (could not list models: ${(error as Error).message})`);
+  }
+}
+
+async function main(): Promise<void> {
+  const kind = provider();
+  console.log(`Model backend smoke test — provider: ${kind ?? 'none'}\n`);
+
+  if (!modelConfigured()) {
+    console.error('No model backend configured. Either:');
+    console.error('  OPENAI_API_KEY=sk-...                    (simplest)');
+    console.error('  AZURE_OPENAI_ENDPOINT + AZURE_OPENAI_API_KEY');
+    console.error('');
+    console.error('Copy .env.example to .env and fill one in.');
     process.exit(1);
   }
 
-  console.log(`Endpoint:    ${process.env.AZURE_OPENAI_ENDPOINT}`);
-  console.log(`API version: ${process.env.AZURE_OPENAI_API_VERSION ?? '2024-10-21 (default)'}\n`);
-
-  console.log('Models reachable with this key:');
-  await listDeployments();
+  if (kind === 'azure') {
+    console.log(`Endpoint:    ${process.env.AZURE_OPENAI_ENDPOINT}`);
+    console.log(`API version: ${process.env.AZURE_OPENAI_API_VERSION ?? '2024-10-21 (default)'}\n`);
+    console.log('Models reachable with this key:');
+    await listDeployments();
+  } else {
+    console.log(`Base URL:    ${process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1'}\n`);
+    console.log('Chat models reachable with this key:');
+    await listOpenAiModels();
+  }
   console.log('');
 
   let failures = 0;
@@ -123,12 +159,12 @@ async function main(): Promise<void> {
   console.log('');
   if (failures > 0) {
     console.log(
-      `${failures} deployment(s) failed. Fix MODEL_SCORE / MODEL_DECOMPOSE / MODEL_CLASSIFY in .env`,
+      `${failures} model(s) failed. Fix MODEL_SCORE / MODEL_DECOMPOSE / MODEL_CLASSIFY in .env`,
     );
     console.log('to match names from the list above, then re-run.');
     process.exit(1);
   }
-  console.log('All configured deployments work with strict structured output.');
+  console.log('All configured models work with strict structured output.');
 }
 
 main().catch((error) => {

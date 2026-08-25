@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { MAX_SUB_ISSUES, routeChild, type Classification } from '../src/split-schema.js';
 
@@ -69,4 +70,27 @@ test('placeholder paths are not treated as real claims', () => {
   // not be the thing that demotes an otherwise mechanical item.
   const { route } = routeChild(mechanicalCase, []);
   assert.equal(route, 'mechanical');
+});
+
+/**
+ * suggestedActors returns the Actor interface, where `id` does not exist.
+ * Selecting it directly made the query invalid, and the empty catch turned that
+ * into "Copilot is not available here" — delegation silently off.
+ */
+test('the Copilot lookup selects the node id through inline fragments', () => {
+  const source = readFileSync(new URL('../src/split.ts', import.meta.url), 'utf8');
+  const query = source.slice(source.indexOf('suggestedActors'));
+
+  assert.match(query, /\.\.\.\s*on Bot\s*\{\s*id\s*\}/, 'needs an inline fragment on Bot');
+  assert.doesNotMatch(
+    query.slice(0, query.indexOf('}')),
+    /nodes\s*\{\s*login\s+id\s*\}/,
+    'id must not be selected straight off the Actor interface',
+  );
+});
+
+test('the agent lookup and assignment report why they failed', () => {
+  const source = readFileSync(new URL('../src/split.ts', import.meta.url), 'utf8');
+  // Both functions degrade to "no agent", so a bare catch hides the cause.
+  assert.doesNotMatch(source, /\}\s*catch\s*\{\s*\n\s*return (null|false);/);
 });

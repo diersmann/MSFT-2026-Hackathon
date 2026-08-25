@@ -9,7 +9,10 @@
  *   npm run lint -- --repo owner/name --issue 4 --post
  *   npm run lint -- --repo owner/name --all --limit 20
  */
-import 'dotenv/config';
+import { loadEnv } from './env.js';
+
+loadEnv();
+
 import {
   azureConfigured,
   createOctokit,
@@ -126,8 +129,8 @@ async function main(): Promise<void> {
   }
 
   if (!azureConfigured()) {
-    console.error('Azure OpenAI is not configured. Copy .env.example to .env and fill it in.');
-    console.error('Then run `npm run smoke` to verify your deployment names.');
+    console.error('No model backend configured. Set OPENAI_API_KEY (or the AZURE_OPENAI_* pair)');
+    console.error('in .env, then run `npm run smoke` to verify your model names.');
     process.exit(1);
   }
 

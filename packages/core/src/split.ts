@@ -196,18 +196,30 @@ export async function linkSubIssue(
 export async function copilotActorId(octokit: Octokit, ref: RepoRef): Promise<string | null> {
   try {
     const result = await octokit.graphql<{
-      repository: { suggestedActors: { nodes: Array<{ login: string; id: string }> } };
+      repository: { suggestedActors: { nodes: Array<{ login: string; id?: string }> } };
     }>(
+      // suggestedActors returns the Actor interface, which has login but not id.
+      // Selecting id directly is invalid GraphQL, so the node id has to come
+      // through inline fragments on the concrete types.
       `query($owner:String!,$repo:String!){
          repository(owner:$owner,name:$repo){
-           suggestedActors(capabilities:[CAN_BE_ASSIGNED], first:50){ nodes { login id } }
+           suggestedActors(capabilities:[CAN_BE_ASSIGNED], first:50){
+             nodes {
+               login
+               ... on Bot { id }
+               ... on User { id }
+             }
+           }
          }
        }`,
       { owner: ref.owner, repo: ref.repo },
     );
     const bot = result.repository.suggestedActors.nodes.find((n) => n.login === COPILOT_LOGIN);
     return bot?.id ?? null;
-  } catch {
+  } catch (error) {
+    // Returning null here disables delegation, so a silent catch turns a broken
+    // query into "Copilot is unavailable" and hides the real cause.
+    console.warn(`Could not resolve the Copilot agent: ${(error as Error).message}`);
     return null;
   }
 }
@@ -229,7 +241,12 @@ export async function assignCopilot(
       { issueId, actorIds: [actorId] },
     );
     return true;
-  } catch {
+  } catch (error) {
+    // The caller reports this as "not assigned"; without the reason a missing
+    // PAT scope is indistinguishable from an unavailable agent.
+    console.warn(
+      `Could not assign the Copilot agent to #${issueNumber}: ${(error as Error).message}`,
+    );
     return false;
   }
 }

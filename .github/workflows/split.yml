@@ -36,14 +36,15 @@ jobs:
         id: guard
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
           AZURE_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           AZURE_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           ACTOR: ${{ github.event.comment.user.login }}
           REPO: ${{ github.repository }}
         run: |
-          if [ -z "$AZURE_KEY" ] || [ -z "$AZURE_ENDPOINT" ]; then
+          if [ -z "$OPENAI_KEY" ] && { [ -z "$AZURE_KEY" ] || [ -z "$AZURE_ENDPOINT" ]; }; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Azure credentials are not configured - skipping /split."
+            echo "::notice::No model backend is configured - skipping /split."
             exit 0
           fi
 
@@ -90,12 +91,14 @@ jobs:
           # gh reads GH_TOKEN, not GITHUB_TOKEN, and this step shells out to it
           # for the parse-failure reply.
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODEL_PROVIDER: ${{ vars.MODEL_PROVIDER }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           AZURE_OPENAI_API_VERSION: ${{ vars.AZURE_OPENAI_API_VERSION || '2024-10-21' }}
-          MODEL_SCORE: ${{ vars.MODEL_SCORE || 'gpt-4.1-mini' }}
-          MODEL_DECOMPOSE: ${{ vars.MODEL_DECOMPOSE || 'gpt-4.1' }}
-          MODEL_CLASSIFY: ${{ vars.MODEL_CLASSIFY || 'o4-mini' }}
+          MODEL_SCORE: ${{ vars.MODEL_SCORE || 'gpt-4o-mini' }}
+          MODEL_DECOMPOSE: ${{ vars.MODEL_DECOMPOSE || 'gpt-4o' }}
+          MODEL_CLASSIFY: ${{ vars.MODEL_CLASSIFY || 'gpt-4o' }}
           TARGET_REPO: ${{ github.repository }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           COMMENT_BODY: ${{ github.event.comment.body }}

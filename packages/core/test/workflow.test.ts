@@ -99,10 +99,12 @@ test('the readiness workflow cannot fail an issue', () => {
   assert.match(yaml, /cancel-in-progress:\s*true/);
 });
 
-test('both workflows no-op cleanly when Azure is not configured', () => {
+test('both workflows no-op cleanly when no model backend is configured', () => {
   for (const path of [SPLIT_WORKFLOW, LINT_WORKFLOW]) {
     const yaml = readFileSync(path, 'utf8');
-    assert.match(yaml, /AZURE_OPENAI_API_KEY/, `${path} must check for the key`);
+    // Either backend is enough to run, so the guard has to consider both.
+    assert.match(yaml, /OPENAI_API_KEY/, `${path} must check for an OpenAI key`);
+    assert.match(yaml, /AZURE_OPENAI_API_KEY/, `${path} must check for an Azure key`);
     assert.match(yaml, /::notice::/, `${path} must announce a skip rather than failing`);
   }
 });

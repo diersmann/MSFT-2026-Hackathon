@@ -6,7 +6,10 @@
  *   npm run split -- --repo owner/name --issue 12 --post
  *   npm run split -- --repo owner/name --issue 12 --reclassify 15=judgement
  */
-import 'dotenv/config';
+import { loadEnv } from './env.js';
+
+loadEnv();
+
 import {
   assignCopilot,
   azureConfigured,
@@ -121,7 +124,7 @@ async function main(): Promise<void> {
   }
 
   if (!azureConfigured() && !args.flags.reclassify) {
-    console.error('Azure OpenAI is not configured. Copy .env.example to .env and fill it in.');
+    console.error('No model backend configured. Set OPENAI_API_KEY (or the AZURE_OPENAI_* pair).');
     process.exit(1);
   }
 
