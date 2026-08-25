@@ -70,7 +70,15 @@ jobs:
         if: steps.guard.outputs.ready == 'true'
         run: npm ci --no-audit --no-fund
 
+      # @dispatch/core resolves to dist/, so tsx cannot load it from source.
+      # Without this the CLI dies with ERR_MODULE_NOT_FOUND before it ever
+      # reaches the model.
+      - name: Build the engine
+        if: steps.guard.outputs.ready == 'true'
+        run: npm run build
+
       - name: Score and comment
+        id: score
         if: steps.guard.outputs.ready == 'true'
         # Advisory means advisory: a model outage must not surface as a failed
         # check on a contributor's issue.
@@ -91,15 +99,26 @@ jobs:
         run: |
           ARGS="--repo $TARGET_REPO --issue $ISSUE_NUMBER --post"
           if [ "$FORCE" = "true" ]; then ARGS="$ARGS --force"; fi
-          npx tsx packages/cli/src/lint.ts $ARGS | tee "$RUNNER_TEMP/lint.log"
+          # Capture stderr too. With stdout only, a crash left an empty log and
+          # the summary below reported nothing while the job stayed green.
+          npx tsx packages/cli/src/lint.ts $ARGS 2>&1 | tee "$RUNNER_TEMP/lint.log"
 
       - name: Summarise
         if: always() && steps.guard.outputs.ready == 'true'
+        env:
+          SCORE_OUTCOME: ${{ steps.score.outcome }}
         run: |
           {
             echo "### Agent-readiness lint"
             echo ""
-            if [ -f "$RUNNER_TEMP/lint.log" ]; then
+            # continue-on-error keeps a model outage off a contributor's issue,
+            # but it also hides genuine breakage behind a green check. Say so.
+            if [ "$SCORE_OUTCOME" != "success" ]; then
+              echo "**The scoring step failed and no comment was posted.**"
+              echo "The check is green on purpose — this linter never blocks an issue."
+              echo ""
+            fi
+            if [ -s "$RUNNER_TEMP/lint.log" ]; then
               echo '```'
               head -c 8000 "$RUNNER_TEMP/lint.log"
               echo '```'
@@ -107,3 +126,7 @@ jobs:
               echo "No output captured - the scoring step did not run."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$SCORE_OUTCOME" != "success" ]; then
+            echo "::warning::Readiness scoring failed; see the run summary. No comment was posted."
+          fi

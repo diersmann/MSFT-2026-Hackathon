@@ -108,3 +108,27 @@ test('both workflows no-op cleanly when no model backend is configured', () => {
     assert.match(yaml, /::notice::/, `${path} must announce a skip rather than failing`);
   }
 });
+
+/**
+ * @dispatch/core resolves to dist/, so a workflow that installs but never
+ * builds dies with ERR_MODULE_NOT_FOUND. continue-on-error then keeps the job
+ * green, so this failure is invisible unless something asserts on it.
+ */
+test('both workflows build the engine before invoking the CLI', () => {
+  for (const path of [SPLIT_WORKFLOW, LINT_WORKFLOW]) {
+    const yaml = readFileSync(path, 'utf8');
+    const build = yaml.indexOf('npm run build');
+    const invoke = yaml.indexOf('npx tsx packages/cli');
+
+    assert.ok(build > -1, `${path} must build the engine`);
+    assert.ok(invoke > -1, `${path} must invoke the CLI`);
+    assert.ok(build < invoke, `${path} must build before invoking the CLI`);
+  }
+});
+
+test('the lint workflow captures stderr and reports a silent failure', () => {
+  const yaml = readFileSync(LINT_WORKFLOW, 'utf8');
+  // Piping stdout alone left an empty log when the CLI crashed.
+  assert.match(yaml, /2>&1\s*\|\s*tee/, 'must capture stderr into the log');
+  assert.match(yaml, /::warning::/, 'must flag a failed scoring run');
+});

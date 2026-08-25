@@ -81,6 +81,11 @@ jobs:
         if: steps.guard.outputs.ready == 'true'
         run: npm ci --no-audit --no-fund
 
+      # @dispatch/core resolves to dist/, so tsx cannot load it from source.
+      - name: Build the engine
+        if: steps.guard.outputs.ready == 'true'
+        run: npm run build
+
       - name: Split or reclassify
         if: steps.guard.outputs.ready == 'true'
         continue-on-error: true
